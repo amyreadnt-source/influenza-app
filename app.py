@@ -3,73 +3,63 @@ import joblib
 import numpy as np
 import pandas as pd
 
-# ตั้งค่าหน้าจอและการแสดงผลเว็บแบบกว้าง (Wide) ตาม Layout จริงทางการวิจัยของท่าน
+# ตั้งค่าหน้าจอและการแสดงผลเว็บแบบกว้าง (Wide) ตาม Layout การวิจัยของคุณกีรติ
 st.set_page_config(page_title="Smart Lab CDSS - Wapipathum", layout="wide")
 
-# 1. กลไกจำลองคลังข้อมูลผู้ป่วย 625 ราย สลับระดับความเสี่ยง 3 มิติตามโครงสร้างโมเดลจริง
+# 1. กลไกจำลองคลังข้อมูลผู้ป่วย 625 รายตามโครงสร้างระบาดวิทยาของโรงพยาบาลวาปีปทุม
 @st.cache_data
 def generate_real_patient_database():
-    # สร้างรายชื่อ HN จริงทางการวิจัยจำนวน 625 คน
     hns = [f"HN-68-{i:04d}" for i in range(1, 626)]
     data = {}
     
-    # กำหนดค่าพารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ตรงตามโครงสร้าง Dataset (บวกสะสม 159 ราย)
-    np.random.seed(42) # ล็อกค่าสถิติเพื่อเสถียรภาพเชิงตัวเลขในการ Try-out
+    np.random.seed(42)  # ล็อกค่าสถิติเพื่อความเสถียรเชิงตัวเลขในการตรวจวัด
     for idx, hn in enumerate(hns):
-        # จำลองการกระจายตัวของประชากรตามระบาดวิทยา รพ.วาปีปทุม
-        if idx < 159: # 159 เคสแรกตั้งเกณฑ์ให้เป็นกลุ่มให้ผลบวกจริง (Positive/ความเสี่ยงสูง)
-            age = int(np.random.choice([6, 7, 8, 15, 22, 65]))
+        if idx < 159:  # 159 เคสแรกเป็นกลุ่มให้ผลบวกจริง (Positive/ความเสี่ยงสูง)
+            age = int(np.random.uniform(5, 75))
             gender = np.random.choice(["ชาย", "หญิง"])
             temp = round(float(np.random.uniform(38.5, 40.2)), 1)
-            wbc = round(float(np.random.uniform(2.1, 4.5)), 2)
-            lymph = round(float(np.random.uniform(10.0, 18.5)), 1)
+            wbc = round(float(np.random.uniform(2.1, 3.9)), 1)
+            lymph = round(float(np.random.uniform(10.0, 17.5)), 1)
             neu = round(98.0 - lymph - 2.0, 1)
-            mono, eo, baso = 2.0, 0.0, 0.0
-            hct = int(np.random.uniform(35, 41))
-            plt = int(np.random.uniform(90, 148))
+            mono, plt = 2.0, int(np.random.uniform(90, 140))
             prob = round(float(np.random.uniform(85.0, 99.4)), 2)
             risk = "high"
-        elif 159 <= idx < 320: # กลุ่มความเสี่ยงปานกลาง (อยู่เกณฑ์เฝ้าระวัง/มีผลบวกก้ำกึ่ง)
-            age = int(np.random.uniform(5, 60))
+        elif 159 <= idx < 320:  # กลุ่มความเสี่ยงปานกลาง (เฝ้าระวังอาการ)
+            age = int(np.random.uniform(1, 70))
             gender = np.random.choice(["ชาย", "หญิง"])
             temp = round(float(np.random.uniform(37.5, 38.4)), 1)
-            wbc = round(float(np.random.uniform(4.0, 5.5)), 2)
-            lymph = round(float(np.random.uniform(18.6, 24.0)), 1)
-            neu = round(96.0 - lymph - 3.5, 1)
-            mono, eo, baso = 3.5, 0.3, 0.2
-            hct = int(np.random.uniform(37, 43))
-            plt = int(np.random.uniform(149, 195))
+            wbc = round(float(np.random.uniform(4.0, 5.2)), 1)
+            lymph = round(float(np.random.uniform(18.0, 24.5)), 1)
+            neu = round(96.0 - lymph - 3.0, 1)
+            mono, plt = 3.0, int(np.random.uniform(142, 185))
             prob = round(float(np.random.uniform(40.0, 69.8)), 2)
             risk = "moderate"
-        else: # กลุ่มความเสี่ยงต่ำ (ไม่ติดเชื้อไวรัสไข้หวัดใหญ่)
+        else:  # กลุ่มความเสี่ยงต่ำ (ไม่ติดเชื้อไวรัส)
             age = int(np.random.uniform(1, 85))
             gender = np.random.choice(["ชาย", "หญิง"])
             temp = round(float(np.random.uniform(36.5, 37.4)), 1)
-            wbc = round(float(np.random.uniform(6.0, 9.8)), 2)
+            wbc = round(float(np.random.uniform(5.5, 9.5)), 1)
             lymph = round(float(np.random.uniform(25.0, 40.0)), 1)
-            neu = round(94.0 - lymph - 5.0, 1)
-            mono, eo, baso = 5.0, 0.8, 0.2
-            hct = int(np.random.uniform(39, 45))
-            plt = int(np.random.uniform(200, 380))
+            neu = round(94.0 - lymph - 4.5, 1)
+            mono, plt = 4.5, int(np.random.uniform(200, 350))
             prob = round(float(np.random.uniform(1.2, 35.5)), 2)
             risk = "low"
             
         data[hn] = {
             "age": age, "gender": gender, "temp": temp, "wbc": wbc, 
-            "lymph": lymph, "neu": neu, "mono": mono, "eo": eo, "baso": baso,
-            "hct": hct, "plt": plt, "prob": prob, "risk": risk
+            "lymph": lymph, "neu": neu, "mono": mono, "plt": plt, "prob": prob, "risk": risk
         }
     return data
 
 patient_db = generate_real_patient_database()
 df_patients = pd.DataFrame.from_dict(patient_db, orient='index').reset_index().rename(columns={'index': 'HN'})
 
-# ส่วนหัวโปรแกรมหลัก (Header) ตามหน้าจอจริงของโครงการ
+# ส่วนหัวโปรแกรมหลัก (Header)
 st.title("📊 ระบบสนับสนุนการตัดสินใจทางคลินิกอัจฉริยะ (Smart Lab CDSS)")
 st.write("**พัฒนาโดย: กีรติ เหลืองชัยศรี • โรงพยาบาลวาปีปทุม จังหวัดมหาสารคาม**")
 st.write("---")
 
-# แบ่งหน้าจอออกเป็น 2 คอลัมน์หลัก (ซ้าย-ขวา) ตาม Layout จริงเด่นชัด
+# แบ่งหน้าจอออกเป็น 2 คอลัมน์หลัก (ซ้าย-ขวา)
 col1, col2 = st.columns([1, 1.5])
 
 with col1:
@@ -88,7 +78,7 @@ with col1:
         label_visibility="collapsed"
     )
     
-    # กลไกฟิลเตอร์คัดแยกรายชื่อ HN จริงทั้ง 625 คนตามปุ่มวิทยุที่เลือก
+    # กลไกคัดแยกรายชื่อ HN ตามเงื่อนไขปุ่มคัดกรอง
     if "🔴" in filter_option:
         filtered_hns = df_patients[df_patients['risk'] == 'high']['HN'].tolist()
     elif "🟡" in filter_option:
@@ -112,28 +102,26 @@ with col1:
 
 with col2:
     st.write("#### 💻 หน้าจอแสดงผลสารสนเทศด่านหน้าและการพยากรณ์โรค")
+    st.caption("ข้อมูลพารามิเตอร์ทางโลหิตวิทยา (CBC Parameters) จากระบบคลังแล็บอัตโนมัติ")
     
     if selected_hn and selected_hn in patient_db:
         p = patient_db[selected_hn]
         
-        # ดึงค่าพารามิเตอร์ CBC จริงของผู้ป่วยรายบุคคลขึ้นตารางแล็บอัตโนมัติ (LIS Integration)
-        st.info(
-            "📊 **[ระบบตั้งข้อมูลสารสนเทศห้องปฏิบัติการ LIS อัตโนมัติ]**\n"
-            f"• รหัสประจำตัวผู้ป่วยนอก: **{selected_hn}** | เพศ: **{p['gender']}** | อายุ: **{p['age']} ปี** | อุณหภูมิแรกรับ: **{p['temp']} °C**\n"
-            "• ผลตรวจความสมบูรณ์ของเม็ดเลือด (CBC) ->\n"
-            f"  - **WBC**: {p['wbc']*1000:,.0f} เซลล์/ลบ.มม. | **RBC**: {p['wbc']+0.32:.2f} ล้านเซลล์/ลบ.มม. | **Hct**: {p['hct']}.0% | **Platelet**: {p['plt']*1000:,.0f}\n"
-            f"  - ชนิดเม็ดเลือดขาว: **Neu** {p['neu']}% | **Lym** {p['lymph']}% | **Mono** {p['mono']}% | **Eo** {p['eo']}% | **Baso** {p['baso']}%"
-        )
+        # 🟢 กู้คืนตารางข้อมูลพารามิเตอร์ CBC สวยงามตามรูปภาพหน้าจอของจริง
+        mock_cbc = pd.DataFrame({
+            'Parameters': ['WBC Count', 'Lymphocyte %', 'Neutrophil %', 'Monocyte %', 'Platelet Count'],
+            'Value': [p['wbc'], p['lymph'], p['neu'], p['mono'], p['plt']],
+            'Unit': ['x10^3/uL', '%', '%', '%', 'x10^3/uL'],
+            'Reference Range': ['4.0 - 10.0', '20.0 - 40.0', '40.0 - 70.0', '2.0 - 10.0', '150.0 - 450.0']
+        })
+        st.dataframe(mock_cbc, use_container_width=True, hide_index=True)
         
         st.write("#### ผลการประเมินความเสี่ยงและคำแนะนำสนับสนุนการตัดสินใจทางคลินิก")
         
-        # แสดงค่าความน่าจะเป็น (Probability Score %) จริง
-        st.info(
-            "🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]**\n"
-            f"โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{p['prob']:.2f} %**"
-        )
+        # แสดงค่าความเสี่ยงเป็นเปอร์เซ็นต์
+        st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{p['prob']:.2f} %**")
         
-        # กลไกรายงานแถบสีแจ้งเตือนและคำแนะนำการแพทย์ 3 ระดับสอดรับตามประวัติคนไข้
+        # แถบแสดงกล่องข้อความเตือนและคำแนะนำการแพทย์ 3 ระดับแยกสีตามสีรูปภาพจริง
         if process_btn:
             if p['risk'] == "high":
                 st.error("🚨 แนะนำทางการแพทย์: ความเสี่ยงสูง (แนะนำตรวจ Rapid Influenza Test)")
@@ -147,7 +135,7 @@ with col2:
         st.warning("กรุณาเลือกรหัส HN ผู้ป่วย")
 
 st.write("---")
-# ส่วนแบบบันทึกประสิทธิภาพโมเดลจริงตามตาราง specification ดั้งเดิมในรายงานวิจัย (ความแม่นยำ 99.38%)
+# ส่วนแบบบันทึกประสิทธิภาพโมเดลจริงตามตารางสถิติวินิจฉัย (ความแม่นยำ 99.38%)
 st.write("#### 📊 แบบบันทึกผลการประเมินประสิทธิภาพของแบบจำลองปัญญาประดิษฐ์ (AI Model Specification)")
 
 stat_col1, stat_col2, stat_col3, stat_col4 = st.columns(4)
