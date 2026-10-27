@@ -23,7 +23,7 @@ def load_anonymized_data():
         # ปรับชื่อคอลัมน์ตัวแปรทั้งหมดให้เป็นตัวพิมพ์ใหญ่เพื่อป้องกันระบบเพี้ยน
         df.columns = df.columns.astype(str).str.strip().str.upper()
         
-        # 🛠️ สร้างรหัสจำลองทางการวิจัยในรูปแบบ HN (เช่น HN-001 ถึง HN-625) ครอบทับแถวข้อมูลจริงจำนวน 625 ราย
+        # 🛠️ สร้างรหัสจำลองทางการวิจัยในรูปแบบ HN (HN-001 ถึง HN-625) ครอบทับแถวข้อมูลจริงจำนวน 625 ราย
         total_rows = len(df)
         df['STUDY_HN'] = [f"HN-{i:03d}" for i in range(1, total_rows + 1)]
         
@@ -71,7 +71,6 @@ if df_patients is not None:
             filtered_hns = df_patients['STUDY_HN'].tolist()
 
         st.write("#### 🔍 2. เลือกรหัส HN ผู้ป่วย")
-        # 🟢 ตัดประโยคแจ้งจำนวน "มีรหัสลับพรางตัวตน..." ออกไปตามเงื่อนไขที่ท่านกำหนดเรียบร้อยแล้ว
         
         if filtered_hns:
             selected_hn = st.selectbox("เลือกรหัส HN ผู้ป่วย:", filtered_hns, label_visibility="collapsed")
@@ -84,23 +83,26 @@ if df_patients is not None:
 
     with col2:
         st.write("#### 💻 หน้าจอแสดงผลสารสนเทศด่านหน้าและการพยากรณ์โรค")
-        st.caption("ข้อมูลพารามิเตอร์ดัชนีทางโลหิตวิทยาและสัญญาณชีพจริง (ระบบปกปิดตัวตนคนไข้)")
+        st.caption("ข้อมูลพารามิเตอร์ดัชนีทางโลหิตวิทยาและสัญญาณชีพจริง (ระบบปกปิดตัวตนคนไข)")
         
         if selected_hn:
-            # ดึงข้อมูลจริงในแถวนั้นมาแสดงผลผ่านระบบรหัสพรางตัวตนในรูปแบบ HN
-            p_row = df_patients[df_patients['STUDY_HN'] == selected_hn].iloc
+            # 🛠️ แก้ไขพาร์ทดึงข้อมูลให้มีเสถียรภาพ (ดึงเป็น Series ความสอดคล้องเชิงระบบ)
+            p_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index[0]
             
-            # ฟังก์ชันช่วยดึงข้อมูลปลอดภัยป้องกันบั๊กชื่อคอลัมน์
+            # ฟังก์ชันช่วยดึงค่าข้อมูลตามพิกัดแถวและคอลัมน์ตัวพิมพ์ใหญ่แบบปลอดภัย
             def get_val(col_name, default=0.0):
-                return p_row.get(col_name.upper(), default)
+                c_upper = col_name.upper()
+                if c_upper in df_patients.columns:
+                    return df_patients.at[p_idx, c_upper]
+                return default
             
             # ดึงค่าโอกาสทำนายจริง (PROB) และเกณฑ์ความเสี่ยงจริง (RISK) จาก Excel
-            prob_val = get_val('prob', 0.0)
+            prob_val = float(get_val('prob', 0.0))
             risk_val = str(get_val('risk', 'low')).lower()
             
             st.write(f"**รหัสประจำตัวผู้ป่วยนอก:** `{selected_hn}` | **อายุ:** {int(get_val('Age', 0))} ปี | **อุณหภูมิแรกรับ:** {get_val('body_temp', get_val('temp', 0.0))} °C")
             
-            # 🟢 ตารางรายงานพารามิเตอร์ CBC 14 ตัวแปร ดึงค่าจริงจากไฟล์ Excel สอดคล้องตามลำดับฟีเจอร์พยากรณ์
+            # 🟢 ตารางรายงานพารามิเตอร์ CBC 14 ตัวแปร ดึงค่าจริงจากไฟล์ Excel สอดคล้องตามลำดับฟีเจอร์พยากรณ์ของคุณกีรติ
             real_cbc = pd.DataFrame({
                 'Parameters': [
                     'Hct (Hematocrit)', 'Wbc (WBC Count)', 'Rbc (RBC Count)', 'Plt (Platelet)', 
