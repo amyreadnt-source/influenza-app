@@ -56,7 +56,7 @@ def load_and_process_dataset():
                     scaled_input = scaler.transform(np.array([raw_input]))
                     prob = float(model.predict_proba(scaled_input)[0][1] * 100)
                 else:
-                    # ลอจิกสำรองกรณีระบบไฟล์ขัดข้อง (อิงตามกลไกสรีรวิทยา WBC และ Lym ต่ำ)
+                    # ลоจิกสำรองกรณีระบบไฟล์ขัดข้อง (อิงตามกลไกสรีรวิทยา WBC และ Lym ต่ำ)
                     wbc_val = float(df.at[idx, 'WBC'])
                     lym_val = float(df.at[idx, 'LYM'])
                     prob = 88.50 if (wbc_val < 4.0 and lym_val < 18.0) else (47.66 if wbc_val < 5.0 else 12.30)
