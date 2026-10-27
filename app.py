@@ -8,9 +8,10 @@ try:
     model = joblib.load('xgboost_influenza_model.pkl')
     scaler = joblib.load('blood_scaler.pkl')
 except Exception as e:
-    st.error(f"เกิดข้อผิดพลาดในการโหลดไฟล์กรุณาตรวจสอบชื่อไฟล์: {e}")
+    st.error(f"เกิดข้อผิดพลาดในการโหลดไฟล์ กรุณาตรวจสอบชื่อไฟล์: {e}")
 
-st.set_page_page_config(page_title="AI Influenza Predictor - Wapipathum", layout="centered")
+# แก้ไขคำสั่งระบบให้ถูกต้อง (ลบคำว่า page ที่ซ้ำออก)
+st.set_page_config(page_title="AI Influenza Predictor - Wapipathum", layout="centered")
 
 st.title("🩺 ระบบสนับสนุนการตัดสินใจทำนายเชื้อไวรัสไข้หวัดใหญ่")
 st.write("### โรงพยาบาลวาปีปทุม จังหวัดมหาสารคาม")
@@ -29,7 +30,7 @@ plt = st.number_input("จำนวนเกล็ดเลือด (Platelet C
 
 # 3. กระบวนการคำนวณเมื่อกดปุ่มทำนาย
 if st.button("🚀 ประมวลผลและทำนายความเสี่ยง"):
-    # แปลงเพศเป็นตัวเลข (ตัวอย่าง: ชาย=1, หญิง=0 ขึ้นอยู่กับการเทรนโมเดลเดิมของคุณ)
+    # แปลงเพศเป็นตัวเลข (ชาย=1, หญิง=0)
     gender_encoded = 1 if gender == "ชาย" else 0
     
     # รวมข้อมูลนำเข้าเป็นแถวตาราง (ลำดับตัวแปรต้องตรงกับตาราง Dataset ตอนเทรน)
@@ -41,7 +42,6 @@ if st.button("🚀 ประมวลผลและทำนายความ�
         
         # ส่งให้โมเดล XGBoost คำนวณความน่าจะเป็น
         probability = model.predict_proba(scaled_features)[0][1] * 100
-        prediction = model.predict(scaled_features)[0]
         
         # 4. ส่วนแสดงผลลัพธ์หน้าจอแสดงผลข้อมูล Dashboard
         st.write("---")
