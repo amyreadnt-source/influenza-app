@@ -56,7 +56,7 @@ def load_and_process_dataset():
                     scaled_input = scaler.transform(np.array([raw_input]))
                     prob = float(model.predict_proba(scaled_input)[0][1] * 100)
                 else:
-                    # ลоจิกสำรองกรณีระบบไฟล์ขัดข้อง (อิงตามกลไกสรีรวิทยา WBC และ Lym ต่ำ)
+                    # ลอจิกสำรองกรณีระบบไฟล์ขัดข้อง (อิงตามกลไกสรีรวิทยา WBC และ Lym ต่ำ)
                     wbc_val = float(df.at[idx, 'WBC'])
                     lym_val = float(df.at[idx, 'LYM'])
                     prob = 88.50 if (wbc_val < 4.0 and lym_val < 18.0) else (47.66 if wbc_val < 5.0 else 12.30)
@@ -102,7 +102,7 @@ if df_patients is not None:
         st.write("#### 🔵 1. เลือกตัวกรองระดับความเสี่ยง")
         st.caption("ปุ่มลัดคัดกรองเคสผู้ป่วยตามความเสี่ยงทางคลินิก")
         
-        # ปุ่มวิทยุตัวกรองความเสี่ยงที่แสดงผลรวมไดนามิกตามความจริงของตาราง Excel (625 ราย) ปราศจากเลข 655 ค้างในอดีต
+        # ปุ่มวิทยุตัวกรองความเสี่ยงที่แสดงผลรวมไดนามิกตามความจริงของตาราง Excel (625 ราย)
         filter_option = st.radio(
             "เลือกโหมดคัดกรอง:",
             [
@@ -202,6 +202,7 @@ if df_patients is not None:
     st.write("---")
     st.write("#### 📊 แบบบันทึกผลการประเมินประสิทธิภาพของแบบจำลองปัญญาประดิษฐ์ (AI Model Specification)")
 
+    # 🛠️ [จุดแก้ไขสําคัญ] จัดระเบียบย่อหน้าด้านล่างให้ตรงแนวคำสั่งทั้งหมดอย่างรัดกุม 100%
     stat_col1, stat_col2, stat_col3, stat_col4 = st.columns(4)
     with stat_col1:
         st.metric(label="ความแม่นยำรวม (Overall Accuracy)", value="99.38 %")
@@ -209,4 +210,3 @@ if df_patients is not None:
         st.metric(label="ความไวในการตรวจพบ (Sensitivity)", value="100.00 %")
     with stat_col3:
         st.metric(label="ความจำเพาะในการแยกโรค (Specificity)", value="99.19 %")
-    with stat_col4:
