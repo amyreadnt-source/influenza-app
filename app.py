@@ -59,7 +59,7 @@ def process_real_dataset():
                 if model is not None and scaler is not None:
                     # ปรับสเกลข้อมูลและส่งให้โมเดล XGBoost คำนวณความน่าจะเป็น
                     scaled_input = scaler.transform(np.array([raw_input]))
-                    prob = float(model.predict_proba(scaled_input)[0][1] * 100)
+                    prob = float(model.predict_proba(scaled_input) * 100)
                 else:
                     # ลอจิกสำรองกรณีความผิดพลาดเชิงไฟล์ระบบ (อิงตามกลไกพยาธิสรีรวิทยา WBC ต่ำ และ Lym ต่ำ)
                     wbc_val = float(df.at[idx, 'WBC'])
@@ -152,17 +152,20 @@ if df_patients is not None:
         
         if selected_hn:
             # ดึงตำแหน่งแถวจริงของคนไข้รายนั้นมาแสดงผล
-            p_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index[0]
+            p_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index
             
             def get_val(col_name, default=0.0):
                 c_upper = col_name.upper()
                 if c_upper in df_patients.columns:
                     val = df_patients.at[p_idx, c_upper]
-                    return default if pd.isna(val) else val
+                    # ตรวจสอบค่า Null
+                    if pd.isna(val).any():
+                        return default
+                    return val.values[0] if hasattr(val, 'values') else val
                 return default
             
-            prob_val = float(df_patients.at[p_idx, 'AI_PROB'])
-            risk_val = str(df_patients.at[p_idx, 'AI_RISK'])
+            prob_val = float(df_patients.at[p_idx, 'AI_PROB'].values[0])
+            risk_val = str(df_patients.at[p_idx, 'AI_RISK'].values[0])
             
             st.write(f"**รหัสประจำตัวผู้ป่วยนอก:** `{selected_hn}` | **อายุ:** {int(get_val('Age', 0))} ปี | **อุณหภูมิแรกรับ:** {get_val('body_temp', get_val('temp', 0.0))} °C")
             
@@ -210,7 +213,3 @@ if df_patients is not None:
                 st.info("💡 ระบบพร้อมปฏิบัติงาน: กรุณากดปุ่มประมวลผลด้วย AI เพื่อดูคำแนะนำสนับสนุนการตัดสินใจ")
 
     st.write("---")
-    st.write("#### 📊 แบบบันทึกผลการประเมินประสิทธิภาพของแบบจำลองปัญญาประดิษฐ์ (AI Model Specification)")
-
-    stat_col1, stat_col2, stat_col3, stat_col4 = st.columns(4)
-    with stat_col1:
