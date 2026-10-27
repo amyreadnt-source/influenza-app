@@ -59,7 +59,7 @@ def process_real_dataset():
                 if model is not None and scaler is not None:
                     # ปรับสเกลข้อมูลและส่งให้โมเดล XGBoost คำนวณความน่าจะเป็น
                     scaled_input = scaler.transform(np.array([raw_input]))
-                    prob = float(model.predict_proba(scaled_input) * 100)
+                    prob = float(model.predict_proba(scaled_input)[0][1] * 100)
                 else:
                     # ลอจิกสำรองกรณีความผิดพลาดเชิงไฟล์ระบบ (อิงตามกลไกพยาธิสรีรวิทยา WBC ต่ำ และ Lym ต่ำ)
                     wbc_val = float(df.at[idx, 'WBC'])
@@ -151,25 +151,25 @@ if df_patients is not None:
         st.caption("ข้อมูลพารามิเตอร์ดัชนีทางโลหิตวิทยาและสัญญาณชีพจริงจากไฟล์ Excel (ระบบปกปิดตัวตนคนไข้)")
         
         if selected_hn:
-            # ดึงตำแหน่งแถวจริงของคนไข้รายนั้นมาแสดงผล
-            p_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index
+            # 🛠️ ดึงตำแหน่งดัชนีบรรทัดของผู้ป่วยรายนั้นในรูปแบบเลขดัชนีเดี่ยวเพื่อความเสถียร 100%
+            p_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index[0]
             
+            # ฟังก์ชันช่วยดึงค่าข้อมูลตามพิกัดแถวและคอลัมน์โดยใช้คำสั่ง .loc ยืนยันความโปร่งใสของพารามิเตอร์
             def get_val(col_name, default=0.0):
                 c_upper = col_name.upper()
                 if c_upper in df_patients.columns:
-                    val = df_patients.at[p_idx, c_upper]
-                    # ตรวจสอบค่า Null
-                    if pd.isna(val).any():
+                    val = df_patients.loc[p_idx, c_upper]
+                    if pd.isna(val):
                         return default
-                    return val.values[0] if hasattr(val, 'values') else val
+                    return float(val)
                 return default
             
-            prob_val = float(df_patients.at[p_idx, 'AI_PROB'].values[0])
-            risk_val = str(df_patients.at[p_idx, 'AI_RISK'].values[0])
+            prob_val = float(df_patients.loc[p_idx, 'AI_PROB'])
+            risk_val = str(df_patients.loc[p_idx, 'AI_RISK'])
             
             st.write(f"**รหัสประจำตัวผู้ป่วยนอก:** `{selected_hn}` | **อายุ:** {int(get_val('Age', 0))} ปี | **อุณหภูมิแรกรับ:** {get_val('body_temp', get_val('temp', 0.0))} °C")
             
-            # 🟢 [ตารางแสดงผล CBC 14 ตัวแปรจริง] ดึงค่าจริงตรงตามแถวตาราง Excel ของผู้ป่วยคนนั้นๆ เป๊ะๆ
+            # 🟢 [ตารางแสดงผล CBC 14 ตัวแปรจริง] ดึงค่าจริงตรงตามแถวตาราง Excel ของผู้ป่วยคนนั้นๆ เป๊ะๆ ไม่เพี้ยน
             real_cbc = pd.DataFrame({
                 'Parameters': [
                     'Hct (Hematocrit)', 'Wbc (WBC Count)', 'Rbc (RBC Count)', 'Plt (Platelet)', 
