@@ -6,7 +6,7 @@ import pandas as pd
 # ตั้งค่าหน้าจอและการแสดงผลเว็บแบบกว้าง (Wide) ตาม Layout การวิจัยของคุณกีรติ
 st.set_page_config(page_title="Smart Lab CDSS - Wapipathum", layout="wide")
 
-# 1. กลไกจำลองคลังข้อมูลผู้ป่วย 625 รายตามโครงสร้างระบาดวิทยาของโรงพยาบาลวาปีปทุม
+# 1. กลไกจำลองคลังข้อมูลผู้ป่วย 625 รายตามโครงสร้างตัวแปรจริง 14 ฟีเจอร์พยากรณ์
 @st.cache_data
 def generate_real_patient_database():
     hns = [f"HN-68-{i:04d}" for i in range(1, 626)]
@@ -15,39 +15,29 @@ def generate_real_patient_database():
     np.random.seed(42)  # ล็อกค่าสถิติเพื่อความเสถียรเชิงตัวเลขในการตรวจวัด
     for idx, hn in enumerate(hns):
         if idx < 159:  # 159 เคสแรกเป็นกลุ่มให้ผลบวกจริง (Positive/ความเสี่ยงสูง)
-            age = int(np.random.uniform(5, 75))
-            gender = np.random.choice(["ชาย", "หญิง"])
-            temp = round(float(np.random.uniform(38.5, 40.2)), 1)
-            wbc = round(float(np.random.uniform(2.1, 3.9)), 1)
-            lymph = round(float(np.random.uniform(10.0, 17.5)), 1)
-            neu = round(98.0 - lymph - 2.0, 1)
-            mono, plt = 2.0, int(np.random.uniform(90, 140))
-            prob = round(float(np.random.uniform(85.0, 99.4)), 2)
-            risk = "high"
+            risk, prob = "high", round(float(np.random.uniform(85.0, 99.4)), 2)
+            hct, wbc, rbc, plt = 36, 3.2, 4.12, 115
+            mcv, mch, mchc = 82.5, 27.2, 32.5
+            neu, eo, lym, baso, mono = 79.5, 0.0, 16.2, 0.3, 4.0
+            body_temp, age = 39.2, 8
         elif 159 <= idx < 320:  # กลุ่มความเสี่ยงปานกลาง (เฝ้าระวังอาการ)
-            age = int(np.random.uniform(1, 70))
-            gender = np.random.choice(["ชาย", "หญิง"])
-            temp = round(float(np.random.uniform(37.5, 38.4)), 1)
-            wbc = round(float(np.random.uniform(4.0, 5.2)), 1)
-            lymph = round(float(np.random.uniform(18.0, 24.5)), 1)
-            neu = round(96.0 - lymph - 3.0, 1)
-            mono, plt = 3.0, int(np.random.uniform(142, 185))
-            prob = round(float(np.random.uniform(40.0, 69.8)), 2)
-            risk = "moderate"
+            risk, prob = "moderate", round(float(np.random.uniform(40.0, 69.8)), 2)
+            hct, wbc, rbc, plt = 39, 4.5, 4.45, 162
+            mcv, mch, mchc = 85.0, 28.5, 33.1
+            neu, eo, lym, baso, mono = 69.0, 0.5, 22.0, 0.5, 8.0
+            body_temp, age = 38.0, 24
         else:  # กลุ่มความเสี่ยงต่ำ (ไม่ติดเชื้อไวรัส)
-            age = int(np.random.uniform(1, 85))
-            gender = np.random.choice(["ชาย", "หญิง"])
-            temp = round(float(np.random.uniform(36.5, 37.4)), 1)
-            wbc = round(float(np.random.uniform(5.5, 9.5)), 1)
-            lymph = round(float(np.random.uniform(25.0, 40.0)), 1)
-            neu = round(94.0 - lymph - 4.5, 1)
-            mono, plt = 4.5, int(np.random.uniform(200, 350))
-            prob = round(float(np.random.uniform(1.2, 35.5)), 2)
-            risk = "low"
+            risk, prob = "low", round(float(np.random.uniform(1.2, 35.5)), 2)
+            hct, wbc, rbc, plt = 42, 6.8, 4.95, 260
+            mcv, mch, mchc = 88.2, 29.8, 34.0
+            neu, eo, lym, baso, mono = 58.5, 1.5, 33.0, 0.5, 6.5
+            body_temp, age = 36.8, 35
             
         data[hn] = {
-            "age": age, "gender": gender, "temp": temp, "wbc": wbc, 
-            "lymph": lymph, "neu": neu, "mono": mono, "plt": plt, "prob": prob, "risk": risk
+            "Hct": hct, "Wbc": wbc, "Rbc": rbc, "Plt": plt,
+            "MCV": mcv, "MCH": mch, "MCHC": mchc, 
+            "Neu": neu, "Eo": eo, "Lym": lym, "Baso": baso, "Mono": mono,
+            "body_temp": body_temp, "Age": age, "prob": prob, "risk": risk
         }
     return data
 
@@ -102,17 +92,37 @@ with col1:
 
 with col2:
     st.write("#### 💻 หน้าจอแสดงผลสารสนเทศด่านหน้าและการพยากรณ์โรค")
-    st.caption("ข้อมูลพารามิเตอร์ทางโลหิตวิทยา (CBC Parameters) จากระบบคลังแล็บอัตโนมัติ")
+    st.caption("ข้อมูลพารามิเตอร์ดัชนีทางโลหิตวิทยาและสัญญาณชีพจากระบบคลังแล็บอัตโนมัติ")
     
     if selected_hn and selected_hn in patient_db:
         p = patient_db[selected_hn]
         
-        # 🟢 กู้คืนตารางข้อมูลพารามิเตอร์ CBC สวยงามตามรูปภาพหน้าจอของจริง
+        # 🟢 กู้คืนตารางข้อมูลเรียงหัวข้อสอดคล้องตามฟีเจอร์พยากรณ์ในรูปภาพของท่าน 100%
         mock_cbc = pd.DataFrame({
-            'Parameters': ['WBC Count', 'Lymphocyte %', 'Neutrophil %', 'Monocyte %', 'Platelet Count'],
-            'Value': [p['wbc'], p['lymph'], p['neu'], p['mono'], p['plt']],
-            'Unit': ['x10^3/uL', '%', '%', '%', 'x10^3/uL'],
-            'Reference Range': ['4.0 - 10.0', '20.0 - 40.0', '40.0 - 70.0', '2.0 - 10.0', '150.0 - 450.0']
+            'Parameters': [
+                'Hct (Hematocrit)', 'Wbc (WBC Count)', 'Rbc (RBC Count)', 'Plt (Platelet)', 
+                'MCV', 'MCH', 'MCHC', 
+                'Neu (Neutrophil)', 'Eo (Eosinophil)', 'Lym (Lymphocyte)', 'Baso (Basophil)', 'Mono (Monocyte)',
+                'body_temp (อุณหภูมิร่างกาย)', 'Age (อายุ)'
+            ],
+            'Value': [
+                p['Hct'], p['Wbc'], p['Rbc'], p['Plt'], 
+                p['MCV'], p['MCH'], p['MCHC'], 
+                p['Neu'], p['Eo'], p['Lym'], p['Baso'], p['Mono'],
+                p['body_temp'], p['Age']
+            ],
+            'Unit': [
+                '%', 'x10^3/uL', 'x10^6/uL', 'x10^3/uL', 
+                'fL', 'pg', 'g/dL', 
+                '%', '%', '%', '%', '%',
+                '°C', 'ปี'
+            ],
+            'Reference Range': [
+                '36.0 - 54.0', '4.0 - 10.0', '3.8 - 5.8', '150 - 450', 
+                '80.0 - 100.0', '27.0 - 32.0', '32.0 - 36.0', 
+                '40.0 - 70.0', '0.0 - 5.0', '20.0 - 40.0', '0.0 - 1.0', '2.0 - 10.0',
+                '36.5 - 37.4', '0 - 120'
+            ]
         })
         st.dataframe(mock_cbc, use_container_width=True, hide_index=True)
         
