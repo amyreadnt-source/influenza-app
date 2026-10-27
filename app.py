@@ -13,19 +13,19 @@ try:
 except:
     pass
 
-# 🟢 กลไกการโหลดข้อมูลจริงจาก Excel และสร้างรหัสลับพรางตัวตนอัตโนมัติ (Anonymization)
+# 🟢 กลไกการโหลดข้อมูลจริงจาก Excel และสร้างรหัสพรางตัวตนในรูปแบบ HN อ้างอิงทางการวิจัย (625 ราย)
 @st.cache_data
 def load_anonymized_data():
     try:
-        # อ่านไฟล์ Excel จริงที่ตัด HN ออกแล้วเพื่อพิทักษ์สิทธิ์คนไข้
+        # อ่านไฟล์ Excel จริงที่ตัดข้อมูลระบุบุคคลออกแล้วเพื่อพิทักษ์สิทธิ์คนไข้
         df = pd.read_excel('patient_data.xlsx')
         
         # ปรับชื่อคอลัมน์ตัวแปรทั้งหมดให้เป็นตัวพิมพ์ใหญ่เพื่อป้องกันระบบเพี้ยน
         df.columns = df.columns.astype(str).str.strip().str.upper()
         
-        # 🛠️ สร้างรหัสลับอ้างอิงทางการวิจัย (Study ID) ครอบทับแถวข้อมูลจริงอัตโนมัติ
+        # 🛠️ สร้างรหัสจำลองทางการวิจัยในรูปแบบ HN (เช่น HN-001 ถึง HN-625) ครอบทับแถวข้อมูลจริงจำนวน 625 ราย
         total_rows = len(df)
-        df['STUDY_ID'] = [f"PT-{i:03d}" for i in range(1, total_rows + 1)]
+        df['STUDY_HN'] = [f"HN-{i:03d}" for i in range(1, total_rows + 1)]
         
         return df
     except Exception as e:
@@ -60,24 +60,24 @@ if df_patients is not None:
             label_visibility="collapsed"
         )
         
-        # คัดกรองรหัสลับตามเงื่อนไขคอลัมน์ RISK ใน Excel (high, moderate, low)
+        # คัดกรองรหัสลับ HN ตามเงื่อนไขคอลัมน์ RISK ใน Excel (high, moderate, low)
         if "🔴" in filter_option and 'RISK' in df_patients.columns:
-            filtered_ids = df_patients[df_patients['RISK'].astype(str).str.lower().str.contains('high')]['STUDY_ID'].tolist()
+            filtered_hns = df_patients[df_patients['RISK'].astype(str).str.lower().str.contains('high')]['STUDY_HN'].tolist()
         elif "🟡" in filter_option and 'RISK' in df_patients.columns:
-            filtered_ids = df_patients[df_patients['RISK'].astype(str).str.lower().str.contains('mod')]['STUDY_ID'].tolist()
+            filtered_hns = df_patients[df_patients['RISK'].astype(str).str.lower().str.contains('mod')]['STUDY_HN'].tolist()
         elif "🟢" in filter_option and 'RISK' in df_patients.columns:
-            filtered_ids = df_patients[df_patients['RISK'].astype(str).str.lower().str.contains('low')]['STUDY_ID'].tolist()
+            filtered_hns = df_patients[df_patients['RISK'].astype(str).str.lower().str.contains('low')]['STUDY_HN'].tolist()
         else:
-            filtered_ids = df_patients['STUDY_ID'].tolist()
+            filtered_hns = df_patients['STUDY_HN'].tolist()
 
-        st.write("#### 🔍 2. เลือกรหัสผู้ป่วย (Study ID)")
-        st.caption(f"มีรหัสลับพรางตัวตนให้เลือกจำนวน {len(filtered_ids)} ราย")
+        st.write("#### 🔍 2. เลือกรหัส HN ผู้ป่วย")
+        # 🟢 ตัดประโยคแจ้งจำนวน "มีรหัสลับพรางตัวตน..." ออกไปตามเงื่อนไขที่ท่านกำหนดเรียบร้อยแล้ว
         
-        if filtered_ids:
-            selected_id = st.selectbox("เลือกรหัสผู้ป่วย:", filtered_ids, label_visibility="collapsed")
+        if filtered_hns:
+            selected_hn = st.selectbox("เลือกรหัส HN ผู้ป่วย:", filtered_hns, label_visibility="collapsed")
         else:
             st.write("⚠️ *ไม่พบข้อมูลในกลุ่มความเสี่ยงนี้*")
-            selected_id = None
+            selected_hn = None
             
         st.write("")
         process_btn = st.button("🔮 ประมวลผลด้วย AI", use_container_width=True)
@@ -86,9 +86,9 @@ if df_patients is not None:
         st.write("#### 💻 หน้าจอแสดงผลสารสนเทศด่านหน้าและการพยากรณ์โรค")
         st.caption("ข้อมูลพารามิเตอร์ดัชนีทางโลหิตวิทยาและสัญญาณชีพจริง (ระบบปกปิดตัวตนคนไข้)")
         
-        if selected_id:
-            # ดึงข้อมูลจริงในแถวนั้นมาแสดงผลผ่านระบบรหัสลับพรางตัวตน
-            p_row = df_patients[df_patients['STUDY_ID'] == selected_id].iloc[0]
+        if selected_hn:
+            # ดึงข้อมูลจริงในแถวนั้นมาแสดงผลผ่านระบบรหัสพรางตัวตนในรูปแบบ HN
+            p_row = df_patients[df_patients['STUDY_HN'] == selected_hn].iloc
             
             # ฟังก์ชันช่วยดึงข้อมูลปลอดภัยป้องกันบั๊กชื่อคอลัมน์
             def get_val(col_name, default=0.0):
@@ -98,7 +98,7 @@ if df_patients is not None:
             prob_val = get_val('prob', 0.0)
             risk_val = str(get_val('risk', 'low')).lower()
             
-            st.write(f"**รหัสอ้างอิงทางการวิจัย:** `{selected_id}` | **อายุ:** {int(get_val('Age', 0))} ปี | **อุณหภูมิแรกรับ:** {get_val('body_temp', get_val('temp', 0.0))} °C")
+            st.write(f"**รหัสประจำตัวผู้ป่วยนอก:** `{selected_hn}` | **อายุ:** {int(get_val('Age', 0))} ปี | **อุณหภูมิแรกรับ:** {get_val('body_temp', get_val('temp', 0.0))} °C")
             
             # 🟢 ตารางรายงานพารามิเตอร์ CBC 14 ตัวแปร ดึงค่าจริงจากไฟล์ Excel สอดคล้องตามลำดับฟีเจอร์พยากรณ์
             real_cbc = pd.DataFrame({
