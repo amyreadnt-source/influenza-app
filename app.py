@@ -27,6 +27,10 @@ def load_anonymized_data():
         total_rows = len(df)
         df['STUDY_HN'] = [f"HN-{i:03d}" for i in range(1, total_rows + 1)]
         
+        # ทำความสะอาดข้อมูลคอลัมน์ RISK ให้เป็นมาตรฐานพิมพ์เล็กเพื่อตัดบั๊กตัวกรอง
+        if 'RISK' in df.columns:
+            df['RISK'] = df['RISK'].astype(str).str.strip().str.lower()
+            
         return df
     except Exception as e:
         st.error(f"❌ ไม่สามารถโหลดไฟล์ข้อมูลจริงได้: {e}")
@@ -41,6 +45,12 @@ st.write("**พัฒนาโดย: กีรติ เหลืองชั�
 st.write("---")
 
 if df_patients is not None:
+    # นับจำนวนเคสจริงตามที่ปรากฏในตาราง Excel แยกตามกลุ่มความเสี่ยงเพื่อแสดงบนตัวกรองแบบไดนามิก
+    count_all = len(df_patients)
+    count_high = len(df_patients[df_patients['RISK'].str.contains('high|สูง', na=False)]) if 'RISK' in df_patients.columns else 0
+    count_mod = len(df_patients[df_patients['RISK'].str.contains('mod|ปานกลาง|เฝ้าระวัง', na=False)]) if 'RISK' in df_patients.columns else 0
+    count_low = len(df_patients[df_patients['RISK'].str.contains('low|ต่ำ', na=False)]) if 'RISK' in df_patients.columns else 0
+
     # แบ่งหน้าจอออกเป็น 2 คอลัมน์หลัก (ซ้าย-ขวา)
     col1, col2 = st.columns([1, 1.5])
 
@@ -48,26 +58,26 @@ if df_patients is not None:
         st.write("#### 🔵 1. เลือกตัวกรองระดับความเสี่ยง")
         st.caption("ปุ่มลัดคัดกรองเคสผู้ป่วยตามความเสี่ยงทางคลินิก")
         
-        # 🟢 แก้ไขรหัสข้อความเมนูวิทยุตัวเลือกให้ล็อกค่าความจริงเฉพาะ "625 ราย" ตามเงื่อนไขของคุณกีรติ
+        # ปุ่มวิทยุตัวกรองความเสี่ยงที่จะดึงตัวเลขสถิติจริงจาก Excel ขึ้นมาแสดงผล ไม่มั่วตัวเลขค้างในอดีต
         filter_option = st.radio(
             "เลือกโหมดคัดกรอง:",
             [
-                "🔮 แสดงรายชื่อทั้งหมด (625 ราย)",
-                "🔴 แสดงเฉพาะผู้ป่วยความเสี่ยงสูง (ติดเชื้อ)",
-                "🟡 แสดงเฉพาะผู้ป่วยความเสี่ยงปานกลาง (เฝ้าระวัง)",
-                "🟢 แสดงเฉพาะผู้ป่วยความเสี่ยงต่ำ (ไม่ติดเชื้อ)"
+                f"🔮 แสดงรายชื่อทั้งหมด ({count_all} ราย)",
+                f"🔴 แสดงเฉพาะผู้ป่วยความเสี่ยงสูง (ติดเชื้อ) ({count_high} ราย)",
+                f"🟡 แสดงเฉพาะผู้ป่วยความเสี่ยงปานกลาง (เฝ้าระวัง) ({count_mod} ราย)",
+                f"🟢 แสดงเฉพาะผู้ป่วยความเสี่ยงต่ำ (ไม่ติดเชื้อ) ({count_low} ราย)"
             ],
             index=0,
             label_visibility="collapsed"
         )
         
-        # คัดกรองรหัสลับ HN ตามเงื่อนไขคอลัมน์ RISK ใน Excel (high, moderate, low)
-        if "🔴" in filter_option and 'RISK' in df_patients.columns:
-            filtered_hns = df_patients[df_patients['RISK'].astype(str).str.lower().str.contains('high')]['STUDY_HN'].tolist()
-        elif "🟡" in filter_option and 'RISK' in df_patients.columns:
-            filtered_hns = df_patients[df_patients['RISK'].astype(str).str.lower().str.contains('mod')]['STUDY_HN'].tolist()
-        elif "🟢" in filter_option and 'RISK' in df_patients.columns:
-            filtered_hns = df_patients[df_patients['RISK'].astype(str).str.lower().str.contains('low')]['STUDY_HN'].tolist()
+        # ลอจิกการดึงและคัดแยกรายชื่อ HN ตามสถานะความเสี่ยงจริงในตาราง Excel
+        if "🔴" in filter_option:
+            filtered_hns = df_patients[df_patients['RISK'].str.contains('high|สูง', na=False)]['STUDY_HN'].tolist()
+        elif "🟡" in filter_option:
+            filtered_hns = df_patients[df_patients['RISK'].str.contains('mod|ปานกลาง|เฝ้าระวัง', na=False)]['STUDY_HN'].tolist()
+        elif "🟢" in filter_option:
+            filtered_hns = df_patients[df_patients['RISK'].str.contains('low|ต่ำ', na=False)]['STUDY_HN'].tolist()
         else:
             filtered_hns = df_patients['STUDY_HN'].tolist()
 
@@ -76,7 +86,7 @@ if df_patients is not None:
         if filtered_hns:
             selected_hn = st.selectbox("เลือกรหัส HN ผู้ป่วย:", filtered_hns, label_visibility="collapsed")
         else:
-            st.write("⚠️ *ไม่พบข้อมูลในกลุ่มความเสี่ยงนี้*")
+            st.write("⚠️ *ไม่พบข้อมูลผู้ป่วยในกลุ่มความเสี่ยงนี้ใน Excel*")
             selected_hn = None
             
         st.write("")
@@ -87,27 +97,26 @@ if df_patients is not None:
         st.caption("ข้อมูลพารามิเตอร์ดัชนีทางโลหิตวิทยาและสัญญาณชีพจริง (ระบบปกปิดตัวตนคนไข้)")
         
         if selected_hn:
-            # 🛠️ ปรับแก้พาร์ทดึงข้อมูลให้ทำงานแบบปลอดภัยผ่านพิกัดแถวตารางสถิติจริง
-            p_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index[0]
+            # 🛠️ [จุดแก้ไขสําคัญ] ดึงพิกัดตำแหน่งดัชนีบรรทัดแรกที่ตรงกับรหัส HN เพื่อล็อกแถวข้อมูลไม่ให้ซ้ำซ้อน
+            row_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index[0]
             
-            # ฟังก์ชันช่วยดึงค่าข้อมูลตามพิกัดแถวและคอลัมน์ตัวพิมพ์ใหญ่แบบปลอดภัยร้อยเปอร์เซ็นต์
+            # ฟังก์ชันช่วยดึงค่าข้อมูลจากบรรทัดจริงตัวแปรนั้นๆ (.loc) ป้องกันข้อมูลเพี้ยนค้างหน้าจอ
             def get_val(col_name, default=0.0):
                 c_upper = col_name.upper()
                 if c_upper in df_patients.columns:
-                    val = df_patients.at[p_idx, c_upper]
-                    # ตรวจจับกรณีค่าเป็น Null/NaN ใน Excel
+                    val = df_patients.loc[row_idx, c_upper]
                     if pd.isna(val):
                         return default
                     return val
                 return default
             
-            # ดึงค่าโอกาสทำนายจริง (PROB) และเกณฑ์ความเสี่ยงจริง (RISK) จาก Excel
+            # สกัดค่าความน่าจะเป็นจริง (PROB) และระดับความเสี่ยงจริง (RISK) รายบุคคลออกจากไฟล์ Excel
             prob_val = float(get_val('prob', 0.0))
             risk_val = str(get_val('risk', 'low')).lower()
             
             st.write(f"**รหัสประจำตัวผู้ป่วยนอก:** `{selected_hn}` | **อายุ:** {int(get_val('Age', 0))} ปี | **อุณหภูมิแรกรับ:** {get_val('body_temp', get_val('temp', 0.0))} °C")
             
-            # 🟢 ตารางรายงานพารามิเตอร์ CBC 14 ตัวแปร ดึงค่าจริงจากไฟล์ Excel สอดคล้องตามลำดับฟีเจอร์พยากรณ์ของคุณกีรติ
+            # 🟢 [ตารางแสดงผล CBC 14 ตัวแปรจริง] ดึงค่าแปรผันตามรายบุคคลคำต่อคำจากแถวข้อมูลใน Excel
             real_cbc = pd.DataFrame({
                 'Parameters': [
                     'Hct (Hematocrit)', 'Wbc (WBC Count)', 'Rbc (RBC Count)', 'Plt (Platelet)', 
@@ -139,11 +148,11 @@ if df_patients is not None:
             st.write("#### ผลการประเมินความเสี่ยงและคำแนะนำสนับสนุนการตัดสินใจทางคลินิก")
             st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{prob_val:.2f} %**")
             
-            # เงื่อนไขแสดงกล่องข้อความเตือน 3 ระดับสอดรับตามความน่าจะเป็นจริงในไฟล์ Excel
+            # ลอจิกการแสดงแถบสีแจ้งเตือนและข้อความคำแนะนำทางการแพทย์ 3 ระดับสอดคล้องตามคอลัมน์ RISK ใน Excel จริง
             if process_btn:
-                if 'high' in risk_val or prob_val >= 70:
+                if 'high' in risk_val or 'สูง' in risk_val or prob_val >= 70:
                     st.error("🚨 แนะนำทางการแพทย์: ความเสี่ยงสูง (แนะนำตรวจ Rapid Influenza Test)")
-                elif 'mod' in risk_val or (40 <= prob_val < 70):
+                elif 'mod' in risk_val or 'ปานกลาง' in risk_val or 'เฝ้าระวัง' in risk_val or (40 <= prob_val < 70):
                     st.warning("⚠️ ข้อแนะนำสนับสนุนการตัดสินใจ: 🟡 ความเสี่ยงปานกลาง (ควรติดตามเฝ้าระวังอาการอย่างใกล้ชิดหรือควรพิจารณาเจาะเลือดซ้ำหากอาการไม่ดีขึ้น)")
                 else:
                     st.success("🟢 แนะนำทางการแพทย์: ความเสี่ยงต่ำ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
