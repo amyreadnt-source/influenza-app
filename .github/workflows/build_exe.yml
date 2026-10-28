@@ -10,13 +10,13 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-size: '3.10'
+        python-version: '3.10'
     - name: Install Dependencies
       run: |
-        pip install streamlit pyinstaller mysql-connector-python joblib pandas numpy openpyxl
+        pip install streamlit pyinstaller mysql-connector-python joblib pandas numpy openpyxl scikit-learn xgboost
     - name: Compile Standalone Executable App
       run: |
-        pyinstaller --onefile --name="SmartLab_CDSS_Setup" --add-data "xgboost_influenza_model.pkl;." --add-data "blood_scaler.pkl;." app_production.py
+        pyinstaller --onefile --clean --name="SmartLab_CDSS_Setup" --add-data "xgboost_influenza_model.pkl;." --add-data "blood_scaler.pkl;." app_production.py
     - name: Upload Installer Artifact
       uses: actions/upload-artifact@v3
       with:
