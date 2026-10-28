@@ -127,7 +127,7 @@ if df_patients is not None:
         else:
             allowed_hns = df_patients['STUDY_HN'].tolist()
 
-        # 🛠️ ฟังก์ชันช่องพิมพ์ค้นหาเลข HN อิสระ (Text Input) ทำงานควบคู่กับระบบ Dropdown
+        # ฟังก์ชันช่องพิมพ์ค้นหาเลข HN อิสระ (Text Input) ทำงานควบคู่กับระบบ Dropdown
         st.write("#### 🔍 2. ค้นหาและเลือกรหัส HN ผู้ป่วย")
         st.caption("พิมพ์เลข HN หรือกดคลิกเลือกรายชื่อจากกล่องเมนูด้านล่าง")
         
@@ -157,9 +157,9 @@ if df_patients is not None:
         st.caption("ข้อมูลพารามิเตอร์ดัชนีทางโลหิตวิทยาและสัญญาณชีพจริงจากไฟล์ Excel (ระบบปกปิดตัวตนคนไข้)")
         
         if selected_hn:
-            # 🛠️ ดึงข้อมูลเฉพาะแถวของเลข HN นั้นๆ ออกมาประมวลผล เพื่อแก้ปัญหา InvalidIndexError
-            p_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index[0]
-            p_row = df_patients.loc[p_idx]
+            # ดึงข้อมูลเฉพาะแถวของเลข HN นั้นๆ ออกมาประมวลผล เพื่อแก้ปัญหา InvalidIndexError
+            p_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index
+            p_row = df_patients.loc[p_idx].iloc[0]
             
             def get_val(col_name, default=0.0):
                 c_upper = col_name.upper()
@@ -211,5 +211,3 @@ if df_patients is not None:
                 if risk_val == "high":
                     st.error("🚨 แนะนำทางการแพทย์: ความเสี่ยงสูง (แนะนำตรวจ Rapid Influenza Test)")
                 elif risk_val == "moderate":
-                    st.warning("⚠️ ข้อแนะนำสนับสนุนการตัดสินใจ: 🟡 ความเสี่ยงปานกลาง (ควรติดตามเฝ้าระวังอาการอย่างใกล้ชิดหรือควรพิจารณาเจาะเลือดซ้ำหากอาการไม่ดีขึ้น)")
-                else:
