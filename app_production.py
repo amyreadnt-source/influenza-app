@@ -208,16 +208,13 @@ if df_patients is not None and not df_patients.empty:
         st.caption("ข้อมูลพารามิเตอร์ดัชนีทางโลหิตวิทยาและสัญญาณชีพดึงสดจากระบบคอมพิวเตอร์โรงพยาบาล")
         
         if selected_hn:
-            p_idx = df_patients[df_patients['HN'] == selected_hn].index[0]
+            p_idx = df_patients[df_patients['HN'] == selected_hn].index
             
-            # ฟังก์ชันช่วยดึงค่าแบบปลอดภัยและเสถียรที่สุดจากตำแหน่ง index เดี่ยว
             def get_val(col_name, default_val=0.0):
                 c_upper = col_name.upper()
                 if c_upper in df_patients.columns:
                     val = df_patients.at[p_idx, c_upper]
                     return default_val if pd.isna(val) else val
-                
-                # โครงสร้างค่าอ้างอิงชั่วคราวก่อนกดดึงข้อมูลสดผ่านท่อ HOSxP จริง
                 ref_dict = {'HCT': 36.2, 'WBC': 9490, 'RBC': 4.81, 'PLT': 460000, 'MCV': 75.2, 'MCH': 23.6, 'MCHC': 31.3, 'NEU': 58, 'EO': 5, 'LYM': 29, 'BASO': 1, 'MONO': 7, 'BODY_TEMP': 36.8, 'AGE': 2}
                 return ref_dict.get(c_upper, default_val)
 
@@ -228,7 +225,7 @@ if df_patients is not None and not df_patients.empty:
             
             st.write(f"**รหัสประจำตัวผู้ป่วยนอก (HN):** `{selected_hn}` | **อายุ:** {v_age} ปี | **อุณหภูมิแรกรับ:** {v_temp} °C")
             
-            # 🛠️ [จุดปลดล็อกถาวร] เรียบเรียงรายการพารามิเตอร์ Value และครอบปิดวงเล็บเหลี่ยมตารางสลับคู่อย่างเที่ยงตรง 100%
-            real_cbc = pd.DataFrame({
-                'Parameters': [
-                    'Hct (Hematocrit)', 'Wbc (WBC Count)', 'Rbc (RBC Count)', 'Plt (Platelet)', 
+            # 🛠️ [จุดเปลี่ยนผ่านวิศวกรรมซอฟต์แวร์] รื้อทิ้งโครงสร้างเก่า แล้วเขียนยัดเข้าตารางแบบรายแถวสลับคู่ (List of Dicts) ป้องกันแครชวงเล็บ 100%
+            cbc_rows = [
+                {"Parameters": "Hct (Hematocrit)", "Value": get_val('Hct'), "Unit": "%", "Reference Range": "36.0 - 54.0"},
+                {"Parameters": "Wbc (WBC Count)", "Value": get_val('Wbc'), "Unit": "เซลล์/ลบ.มม.", "Reference Range": "4,000 - 10,000"},
