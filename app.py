@@ -115,33 +115,28 @@ if df_patients is not None:
         st.caption("พิมพ์เลข HN หรือกดคลิกเลือกรายชื่อจากกล่องเมนูด้านล่าง")
         
         # ช่องพิมพ์ค้นหา HN อิสระ (Text Input) 
-        search_query = st.text_input("พิมพ์รหัส HN เพื่อค้นหา (เช่น HN-467 หรือพิมพ์แค่ 467):", value="").strip().lower()
+        search_query = st.text_input("พิมพ์รหัส HN เพื่อค้นหา (เช่น HN-467 หรือพิมพ์เฉพาะเลข 467):", value="").strip().lower()
         
-        # 🛠️ [จุดแก้ไขสำคัญ] ปรับระบบค้นหาให้ยืดหยุ่นสูง ค้นหาได้ทันทีโดยไม่ติดลอจิกตัวบล็อกในอดีต
+        # คัดกรองรหัสผ่านระเบียบวิธีค้นหาแบบรวดเร็ว
         selected_hn = None
         if search_query:
-            # ดึงเฉพาะตัวเลขมาค้นหาเพื่อความสะดวกในการพิมพ์ของคุณหมอ
             digits_only = ''.join(filter(str.isdigit, search_query))
-            
-            # ค้นหาในฐานข้อมูลว่ามีรหัสที่ตรงกันหรือไม่
-            match_row = pd.DataFrame()
             if digits_only:
                 target_hn_format = f"HN-{int(digits_only):03d}"
-                match_row = df_patients[df_patients['STUDY_HN'] == target_hn_format]
-            
-            if not match_row.empty:
-                selected_hn = match_row['STUDY_HN'].values[0]
+                if target_hn_format in df_patients['STUDY_HN'].values:
+                    selected_hn = target_hn_format
+                else:
+                    st.write("⚠️ *ไม่พบรหัส HN นี้ในระบบข้อมูล 625 ราย*")
             else:
-                st.write("⚠️ *ไม่พบรหัส HN นี้ในไฟล์ฐานข้อมูล 625 ราย*")
-                if allowed_hns: selected_hn = allowed_hns[0]
-        else:
-            # ถ้าไม่มีการพิมพ์ค้นหา ให้ใช้ค่าจาก Dropdown ตามปกติของกลุ่มตัวกรองนั้นๆ
+                st.write("⚠️ *กรุณาระบุเลข HN ให้ถูกต้อง*")
+        
+        # ถ้าไม่มีการพิมพ์ค้นหา หรือพิมพ์หาไม่เจอ ให้ดึงค่าจากกล่อง selectbox ตามกลุ่มตัวกรองปกติ
+        if selected_hn is None:
             if allowed_hns:
                 selected_hn = st.selectbox("เลือกรหัส HN ผู้ป่วย:", allowed_hns, label_visibility="collapsed")
             else:
                 st.write("⚠️ *ไม่พบข้อมูลผู้ป่วยในกลุ่มนี้*")
-                selected_hn = None
-                
+
         st.write("")
         process_btn = st.button("🔮 ประมวลผลด้วย AI", use_container_width=True)
 
@@ -150,9 +145,9 @@ if df_patients is not None:
         st.caption("ข้อมูลพารามิเตอร์ดัชนีทางโลหิตวิทยาและสัญญาณชีพจริงจากไฟล์ Excel (ระบบปกปิดตัวตนคนไข้)")
         
         if selected_hn:
-            # ดึงข้อมูลผู้ป่วยรายแถวออกมาจัดสรรค่าน้ำหนักเชิงคลินิกอย่างเสถียร
-            p_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index
-            p_row = df_patients.loc[p_idx].iloc[0]
+            # ดึงข้อมูลเฉพาะแถวของเลข HN นั้นๆ ออกมาแสดงผล
+            p_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index[0]
+            p_row = df_patients.loc[p_idx]
             
             def get_val(col_name, default=0.0):
                 c_upper = col_name.upper()
@@ -166,6 +161,7 @@ if df_patients is not None:
             
             st.write(f"**รหัสประจำตัวผู้ป่วยนอก:** `{selected_hn}` | **อายุ:** {int(get_val('Age', 0))} ปี | **อุณหภูมิแรกรับ:** {get_val('body_temp', get_val('temp', 37.5))} °C")
             
+            # [ตารางแสดงผล CBC 14 ตัวแปรจริง] ดึงค่าจริงตรงตามไฟล์ Excel ของท่านคำต่อคำ ไม่เพี้ยน
             real_cbc = pd.DataFrame({
                 'Parameters': [
                     'Hct (Hematocrit)', 'Wbc (WBC Count)', 'Rbc (RBC Count)', 'Plt (Platelet)', 
@@ -220,3 +216,4 @@ if df_patients is not None:
     with stat_col4:
         st.metric(label="ความน่าเชื่อถือเมื่อทำนายผลบวก (Precision)", value="97.45 %")
 else:
+    st.error("⚠️ ไม่สามารถ加โหลดไฟล์ฐานข้อมูลหลัก 'patient_data.xlsx' ได้ กรุณาตรวจสอบการอัปโหลดบน GitHub")
