@@ -210,22 +210,30 @@ if df_patients is not None and not df_patients.empty:
         if selected_hn:
             p_idx = df_patients[df_patients['HN'] == selected_hn].index
             
-            def get_val(col_name, default_val=0.0):
-                c_upper = col_name.upper()
-                if c_upper in df_patients.columns:
-                    val = df_patients.at[p_idx, c_upper]
-                    return default_val if pd.isna(val) else val
-                ref_dict = {'HCT': 36.2, 'WBC': 9490, 'RBC': 4.81, 'PLT': 460000, 'MCV': 75.2, 'MCH': 23.6, 'MCHC': 31.3, 'NEU': 58, 'EO': 5, 'LYM': 29, 'BASO': 1, 'MONO': 7, 'BODY_TEMP': 36.8, 'AGE': 2}
-                return ref_dict.get(c_upper, default_val)
+            # 🛠️ [จุดเปลี่ยนเพื่อความเสถียรสูงสุด] ดึงค่าข้อมูลดิบมาผูกเป็นตัวแปรอิสระโดยตรง ไม่ซ้อนในตาราง Pandas ป้องกัน SyntaxError 100%
+            def fetch_single_val(col):
+                c = col.upper()
+                if c in df_patients.columns:
+                    v = df_patients.at[p_idx[0], c]
+                    return 0.0 if pd.isna(v) else v
+                return 0.0
 
-            v_age = int(get_val('AGE', 2))
-            v_temp = float(get_val('BODY_TEMP', 36.8))
-            prob_val = float(df_patients.at[p_idx, 'AI_PROB'])
-            risk_val = str(df_patients.at[p_idx, 'AI_RISK'])
+            v_hct = fetch_single_val('Hct')
+            v_wbc = fetch_single_val('Wbc')
+            v_rbc = fetch_single_val('Rbc')
+            v_plt = fetch_single_val('Plt')
+            v_mcv = fetch_single_val('MCV')
+            v_mch = fetch_single_val('MCH')
+            v_mchc = fetch_single_val('MCHC')
+            v_neu = fetch_single_val('Neu')
+            v_eo = fetch_single_val('Eo')
+            v_lym = fetch_single_val('Lym')
+            v_baso = fetch_single_val('Baso')
+            v_mono = fetch_single_val('Mono')
+            v_temp = fetch_single_val('body_temp') if fetch_single_val('body_temp') > 0 else 36.8
+            v_age = int(fetch_single_val('Age')) if fetch_single_val('Age') > 0 else 2
+            
+            prob_val = float(df_patients.at[p_idx[0], 'AI_PROB'])
+            risk_val = str(df_patients.at[p_idx[0], 'AI_RISK'])
             
             st.write(f"**รหัสประจำตัวผู้ป่วยนอก (HN):** `{selected_hn}` | **อายุ:** {v_age} ปี | **อุณหภูมิแรกรับ:** {v_temp} °C")
-            
-            # 🛠️ [จุดเปลี่ยนผ่านวิศวกรรมซอฟต์แวร์] รื้อทิ้งโครงสร้างเก่า แล้วเขียนยัดเข้าตารางแบบรายแถวสลับคู่ (List of Dicts) ป้องกันแครชวงเล็บ 100%
-            cbc_rows = [
-                {"Parameters": "Hct (Hematocrit)", "Value": get_val('Hct'), "Unit": "%", "Reference Range": "36.0 - 54.0"},
-                {"Parameters": "Wbc (WBC Count)", "Value": get_val('Wbc'), "Unit": "เซลล์/ลบ.มม.", "Reference Range": "4,000 - 10,000"},
