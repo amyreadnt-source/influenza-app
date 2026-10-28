@@ -208,9 +208,9 @@ if df_patients is not None and not df_patients.empty:
         st.caption("ข้อมูลพารามิเตอร์ดัชนีทางโลหิตวิทยาและสัญญาณชีพดึงสดจากระบบคอมพิวเตอร์โรงพยาบาล")
         
         if selected_hn:
-            p_idx = df_patients[df_patients['HN'] == selected_hn].index
+            p_idx = df_patients[df_patients['HN'] == selected_hn].index[0]
             
-            # ฟังก์ชันช่วยดึงค่าแบบปลอดภัยและเสถียรที่สุด
+            # ฟังก์ชันช่วยดึงค่าแบบปลอดภัยและเสถียรที่สุดจากตำแหน่ง index เดี่ยว
             def get_val(col_name, default_val=0.0):
                 c_upper = col_name.upper()
                 if c_upper in df_patients.columns:
@@ -228,8 +228,7 @@ if df_patients is not None and not df_patients.empty:
             
             st.write(f"**รหัสประจำตัวผู้ป่วยนอก (HN):** `{selected_hn}` | **อายุ:** {v_age} ปี | **อุณหภูมิแรกรับ:** {v_temp} °C")
             
-            # 🛠️ [จุดแก้ไขสําคัญ] ปรับปรุงชุดอาเรย์ Value และปิดวงเล็บเหลี่ยมให้ตรงตามหลักภาษาโปรแกรมมิ่งร้อยเปอร์เซ็นต์
+            # 🛠️ [จุดปลดล็อกถาวร] เรียบเรียงรายการพารามิเตอร์ Value และครอบปิดวงเล็บเหลี่ยมตารางสลับคู่อย่างเที่ยงตรง 100%
             real_cbc = pd.DataFrame({
                 'Parameters': [
                     'Hct (Hematocrit)', 'Wbc (WBC Count)', 'Rbc (RBC Count)', 'Plt (Platelet)', 
-                    'MCV', 'MCH', 'MCHC', 
