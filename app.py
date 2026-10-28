@@ -114,21 +114,34 @@ if df_patients is not None:
         st.write("#### 🔍 2. ค้นหาและเลือกรหัส HN ผู้ป่วย")
         st.caption("พิมพ์เลข HN หรือกดคลิกเลือกรายชื่อจากกล่องเมนูด้านล่าง")
         
-        search_query = st.text_input("พิมพ์รหัส HN เพื่อค้นหา (เช่น HN-001):", value="", placeholder="ระบุเลข HN...").strip().upper()
+        # ช่องพิมพ์ค้นหา HN อิสระ (Text Input) 
+        search_query = st.text_input("พิมพ์รหัส HN เพื่อค้นหา (เช่น HN-467 หรือพิมพ์แค่ 467):", value="").strip().lower()
         
-        if search_query and search_query in allowed_hns:
-            final_hns = [search_query]
-        else:
-            if search_query:
-                st.write("⚠️ *ไม่พบรหัส HN นี้ในกลุ่มตัวกรองความเสี่ยงที่เลือก*")
-            final_hns = allowed_hns
+        # 🛠️ [จุดแก้ไขสำคัญ] ปรับระบบค้นหาให้ยืดหยุ่นสูง ค้นหาได้ทันทีโดยไม่ติดลอจิกตัวบล็อกในอดีต
+        selected_hn = None
+        if search_query:
+            # ดึงเฉพาะตัวเลขมาค้นหาเพื่อความสะดวกในการพิมพ์ของคุณหมอ
+            digits_only = ''.join(filter(str.isdigit, search_query))
             
-        if final_hns:
-            selected_hn = st.selectbox("เลือกรหัส HN ผู้ป่วย:", final_hns, label_visibility="collapsed")
-        else:
-            st.write("⚠️ *ไม่พบข้อมูลผู้ป่วยในกลุ่มนี้*")
-            selected_hn = None
+            # ค้นหาในฐานข้อมูลว่ามีรหัสที่ตรงกันหรือไม่
+            match_row = pd.DataFrame()
+            if digits_only:
+                target_hn_format = f"HN-{int(digits_only):03d}"
+                match_row = df_patients[df_patients['STUDY_HN'] == target_hn_format]
             
+            if not match_row.empty:
+                selected_hn = match_row['STUDY_HN'].values[0]
+            else:
+                st.write("⚠️ *ไม่พบรหัส HN นี้ในไฟล์ฐานข้อมูล 625 ราย*")
+                if allowed_hns: selected_hn = allowed_hns[0]
+        else:
+            # ถ้าไม่มีการพิมพ์ค้นหา ให้ใช้ค่าจาก Dropdown ตามปกติของกลุ่มตัวกรองนั้นๆ
+            if allowed_hns:
+                selected_hn = st.selectbox("เลือกรหัส HN ผู้ป่วย:", allowed_hns, label_visibility="collapsed")
+            else:
+                st.write("⚠️ *ไม่พบข้อมูลผู้ป่วยในกลุ่มนี้*")
+                selected_hn = None
+                
         st.write("")
         process_btn = st.button("🔮 ประมวลผลด้วย AI", use_container_width=True)
 
@@ -137,15 +150,19 @@ if df_patients is not None:
         st.caption("ข้อมูลพารามิเตอร์ดัชนีทางโลหิตวิทยาและสัญญาณชีพจริงจากไฟล์ Excel (ระบบปกปิดตัวตนคนไข้)")
         
         if selected_hn:
-            # ดึงข้อมูลผู้ป่วยรายบุคคลแบบระบุพิกัดตรงจุด 100% ป้องกันดัชนีคลาดเคลื่อน
-            p_data = df_patients[df_patients['STUDY_HN'] == selected_hn].to_dict(orient='records')[0]
+            # ดึงข้อมูลผู้ป่วยรายแถวออกมาจัดสรรค่าน้ำหนักเชิงคลินิกอย่างเสถียร
+            p_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index
+            p_row = df_patients.loc[p_idx].iloc[0]
             
             def get_val(col_name, default=0.0):
                 c_upper = col_name.upper()
-                return p_data.get(c_upper, default) if not pd.isna(p_data.get(c_upper, default)) else default
+                if c_upper in df_patients.columns:
+                    val = p_row[c_upper]
+                    return default if pd.isna(val) else val
+                return default
             
-            prob_val = float(p_data['AI_PROB'])
-            risk_val = str(p_data['AI_RISK'])
+            prob_val = float(p_row['AI_PROB'])
+            risk_val = str(p_row['AI_RISK'])
             
             st.write(f"**รหัสประจำตัวผู้ป่วยนอก:** `{selected_hn}` | **อายุ:** {int(get_val('Age', 0))} ปี | **อุณหภูมิแรกรับ:** {get_val('body_temp', get_val('temp', 37.5))} °C")
             
@@ -180,17 +197,15 @@ if df_patients is not None:
             st.write("#### ผลการประเมินความเสี่ยงและคำแนะนำสนับสนุนการตัดสินใจทางคลินิก")
             st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{prob_val:.2f} %**")
             
-            # 🛠️ [จุดปลดล็อกถาวร] เปลี่ยนลอจิกเป็นแบบ Single-line Dictionary Mapping (ไม่มีวันเกิด IndentationError)
-            alert_box_placeholder = st.empty()
             if process_btn:
                 if risk_val == "high":
-                    alert_box_placeholder.error("🚨 แนะนำทางการแพทย์: ความเสี่ยงสูง (แนะนำตรวจ Rapid Influenza Test)")
+                    st.error("🚨 แนะนำทางการแพทย์: ความเสี่ยงสูง (แนะนำตรวจ Rapid Influenza Test)")
                 elif risk_val == "moderate":
-                    alert_box_placeholder.warning("⚠️ ข้อแนะนำสนับสนุนการตัดสินใจ: 🟡 ความเสี่ยงปานกลาง (ควรติดตามเฝ้าระวังอาการอย่างใกล้ชิดหรือควรพิจารณาเจาะเลือดซ้ำหากอาการไม่ดีขึ้น)")
+                    st.warning("⚠️ ข้อแนะนำสนับสนุนการตัดสินใจ: 🟡 ความเสี่ยงปานกลาง (ควรติดตามเฝ้าระวังอาการอย่างใกล้ชิดหรือควรพิจารณาเจาะเลือดซ้ำหากอาการไม่ดีขึ้น)")
                 else:
-                    alert_box_placeholder.success("🟢 แนะนำทางการแพทย์: ความเสี่ยงต่ำ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
+                    st.success("🟢 แนะนำทางการแพทย์: ความเสี่ยงต่ำ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
             else:
-                alert_box_placeholder.info("💡 ระบบพร้อมปฏิบัติงาน: กรุณากดปุ่มประมวลผลด้วย AI เพื่อดูคำแนะนำสนับสนุนการตัดสินใจ")
+                st.info("💡 ระบบพร้อมปฏิบัติงาน: กรุณากดปุ่มประมวลผลด้วย AI เพื่อดูคำแนะนำสนับสนุนการตัดสินใจ")
 
     st.write("---")
     st.write("#### 📊 แบบบันทึกผลการประเมินประสิทธิภาพของแบบจำลองปัญญาประดิษฐ์ (AI Model Specification)")
@@ -205,4 +220,3 @@ if df_patients is not None:
     with stat_col4:
         st.metric(label="ความน่าเชื่อถือเมื่อทำนายผลบวก (Precision)", value="97.45 %")
 else:
-    st.warning("⚠️ ระบบหยุดทำงานชั่วคราวเนื่องจากขาดไฟล์ฐานข้อมูลหลัก")
