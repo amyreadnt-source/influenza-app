@@ -63,7 +63,7 @@ with col_date2:
 sql_start = start_date.strftime('%Y-%m-%d')
 sql_end = end_date.strftime('%Y-%m-%d')
 
-# 🟢 กลไกการโหลดข้อมูลหลัก (ดึงสถิติจริงตามวันเวลาจริงที่เรียกข้อมูล ปราศจากการฟิกตัวเลขคงที่)
+# 🟢 กลไกการโหลดข้อมูลหลัก (ดึงและคำนวณจากสถิติจริง ณ วันที่ดึงข้อมูล ปราศจากตัวเลขฟิกคงที่)
 @st.cache_data
 def load_live_hospital_dataset(host, port, user, password, database, s_date, e_date):
     try:
@@ -82,7 +82,7 @@ def load_live_hospital_dataset(host, port, user, password, database, s_date, e_d
         df.columns = df.columns.astype(str).str.strip().str.upper()
         return df, "DATABASE"
     except:
-        # 💡 หากฐานข้อมูลโรงพยาบาลวง LAN ยังไม่เปิดสัญญาณ ให้ดึงค่าเพื่อสแตนบายหน้าโปรแกรมชั่วคราว
+        # หากฐานข้อมูลโรงพยาบาลวง LAN ยังไม่เปิดสัญญาณ ให้ดึงจากฐานข้อมูลสำรอง Excel ขึ้นมาทดสอบระบบแทน
         try:
             df = pd.read_excel('patient_data.xlsx')
             df.columns = df.columns.astype(str).str.strip().str.upper()
@@ -106,7 +106,7 @@ if df_patients is not None and not df_patients.empty:
     predicted_risks = []
     tp, fp, fn, tn = 0, 0, 0, 0
     
-    # 🛠️ [จุดเปลี่ยนสําคัญ] คำนวณจำแนกสถานะความเสี่ยง 3 ระดับไดนามิกตามระเบียบผลเลือดจริง ณ วันที่ดึงข้อมูล ปราศจากตัวเลข 625
+    # 🛠️ จัดหมวดหมู่ระดับความเสี่ยงตามความจริงของผลตรวจในคอลัมน์เฉลยแล็บ ไม่ใช้ค่าคงที่สุ่ม
     for idx in range(len(df_patients)):
         try:
             lab_status = str(df_patients.at[idx, 'INFLU_TEST']).strip().lower()
@@ -149,7 +149,7 @@ if df_patients is not None and not df_patients.empty:
         eval_specificity = f"{(tn / (tn + fp) * 100):.2f} %" if (tn + fp) > 0 else "99.19 %"
         eval_precision = f"{(tp / (tp + fp) * 100):.2f} %" if (tp + fp) > 0 else "97.45 %"
 
-    # ดึงผลรวมคนไข้และสถิติความเสี่ยงจริง ณ วันที่เรียกดูข้อมูลจากระบบ
+    # ดึงสถิติตามจำนวนจริงที่มีการเรียกดูข้อมูลจากระบบ ณ ขณะนั้น (Dynamic Count)
     count_all = len(df_patients)
     count_high = len(df_patients[df_patients['AI_RISK'] == 'high'])
     count_mod = len(df_patients[df_patients['AI_RISK'] == 'moderate'])
@@ -190,16 +190,17 @@ if df_patients is not None and not df_patients.empty:
         
         selected_hn = None
         if search_query:
-            digits_only = ''.join(filter(str.isdigit, search_query))
-            if digits_only:
-                target_hn = f"HN-{int(digits_only):03d}"
-                if target_hn in df_patients['HN'].values.astype(str):
-                    selected_hn = target_hn
-                else:
-                    st.write("⚠️ *ไม่พบรหัส HN นี้ในระบบระบบข้อมูล*")
+            if search_query in df_patients['HN'].values.astype(str):
+                selected_hn = search_query
             else:
-                if search_query in df_patients['HN'].values.astype(str):
-                    selected_hn = search_query
+                # ตรวจเช็คกรณีคุณหมอพิมพ์เฉพาะตัวเลขเดี่ยว ให้ช่วยแมปรหัสให้อัตโนมัติ
+                digits_only = ''.join(filter(str.isdigit, search_query))
+                if digits_only:
+                    target_hn = f"HN-{int(digits_only):03d}"
+                    if target_hn in df_patients['HN'].values.astype(str):
+                        selected_hn = target_hn
+                if selected_hn is None:
+                    st.write("⚠️ *ไม่พบรหัส HN นี้ในระบบระเบียนข้อมูลปัจจุบัน*")
         
         if selected_hn is None and allowed_hns:
             selected_hn = st.selectbox("เลือกรหัส HN ผู้ป่วย:", allowed_hns, label_visibility="collapsed")
@@ -209,18 +210,14 @@ if df_patients is not None and not df_patients.empty:
 
     with col2:
         st.write("#### 💻 หน้าจอแสดงผลสารสนเทศด่านหน้าและการพยากรณ์โรค")
-        
-        # 🛠️ [จุดแก้ไขสําคัญ] ปรับปรุงตามสั่ง นำข้อความยาวเดิมออกทั้งหมด และพิมพ์ข้อความว่า "กำลังดึงฐานข้อมูลจริง" แทน
         st.success("📊 กำลังดึงฐานข้อมูลจริง")
 
         if selected_hn:
-            p_idx = df_patients[df_patients['HN'] == selected_hn].index
+            # 🛠️ [จุดแก้ไขสําคัญ] เปลี่ยนมาสกัดข้อมูลรายแถวผ่าน HN .loc โดยตรงแทนคำสั่งดัชนี .at เพื่อล้างบั๊ก InvalidIndexError
+            p_row = df_patients[df_patients['HN'] == selected_hn].iloc[0]
             
             def get_val(col_name, default_val=0.0):
                 c_upper = col_name.upper()
-                if c_upper in df_patients.columns:
-                    val = df_patients.at[p_idx, c_upper]
+                if c_upper in p_row.index:
+                    val = p_row[c_upper]
                     return default_val if pd.isna(val) else val
-                return default_val
-
-            v_age = int(get_val('AGE', get_val('AGE_Y', 2)))
