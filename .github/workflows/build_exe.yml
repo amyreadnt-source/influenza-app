@@ -4,22 +4,21 @@ on:
     branches: [ main ]
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
       with:
-        node-version: '16'
-    - name: Install Nativefier Compiler
-      run: npm install -g nativefier
-    - name: Package Standalone Windows App (.exe)
+        python-version: '3.10'
+    - name: Install Dependencies
       run: |
-        nativefier --name "SmartLab_CDSS" --platform "windows" --arch "x64" --single-instance "https://streamlit.app"
-    - name: Zip the Application Folder
+        pip install streamlit pyinstaller mysql-connector-python joblib pandas numpy openpyxl scikit-learn xgboost
+    - name: Package Standalone App to EXE
       run: |
-        zip -r SmartLab_CDSS_Windows.zip SmartLab_CDSS-win32-x64/
-    - name: Upload Installer Artifact
+        pyinstaller --onefile --clean --name="SmartLab_CDSS_Setup" --add-data "xgboost_influenza_model.pkl;." --add-data "blood_scaler.pkl;." app_production.py
+    - name: Upload Finished Installer File
       uses: actions/upload-artifact@v3
       with:
-        name: SmartLab_CDSS_Executable_App
-        path: SmartLab_CDSS_Windows.zip
+        name: SmartLab_CDSS_Windows_Installer
+        path: dist/SmartLab_CDSS_Setup.exe
