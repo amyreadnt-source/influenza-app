@@ -60,15 +60,15 @@ def load_and_classify_dataset():
             lab_val = str(df.at[idx, target_col]).strip().lower() if target_col else ""
             wbc_val = float(df.at[idx, 'WBC']) if 'WBC' in df.columns else 6000.0
             
-            # 🔴 กลุ่มความเสี่ยงสูง (Positive): ล็อกรหัสเจาะจงให้อ่านค่าจากแถวที่เป็น positive เท่านั้น (รวม 159 ราย)
+            # กลุ่มความเสี่ยงสูง (Positive): ล็อกรหัสเจาะจงให้อ่านค่าจากแถวที่เป็น positive เท่านั้น (รวม 159 ราย)
             if 'positive' in lab_val or 'pos' in lab_val:
                 prob = float(np.random.uniform(85.0, 99.4))
                 risk = "high"
-            # 🟡 กลุ่มความเสี่ยงปานกลาง (Negative แต่อาการก้ำกึ่ง เฝ้าระวังอาการ มีจำนวน 201 ราย)
+            # กลุ่มความเสี่ยงปานกลาง (Negative แต่อาการก้ำกึ่ง เฝ้าระวังอาการ มีจำนวน 201 ราย)
             elif 'negative' in lab_val and (wbc_val < 5000 or (159 <= idx < 360)):
                 prob = float(np.random.uniform(40.0, 69.5))
                 risk = "moderate"
-            # 🟢 กลุ่มความเสี่ยงต่ำ (Negative และดัชนีเลือดปกติ มีจำนวน 265 ราย)
+            # กลุ่มความเสี่ยงต่ำ (Negative และดัชนีเลือดปกติ มีจำนวน 265 ราย)
             else:
                 prob = float(np.random.uniform(1.2, 39.5))
                 risk = "low"
@@ -158,8 +158,8 @@ if df_patients is not None:
         
         if selected_hn:
             # ดึงข้อมูลเฉพาะแถวของเลข HN นั้นๆ ออกมาประมวลผล เพื่อแก้ปัญหา InvalidIndexError
-            p_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index[0]
-            p_row = df_patients.loc[p_idx]
+            p_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index
+            p_row = df_patients.loc[p_idx].iloc[0]
             
             def get_val(col_name, default=0.0):
                 c_upper = col_name.upper()
@@ -174,7 +174,7 @@ if df_patients is not None:
             # บอร์ดแสดงข้อมูลพื้นฐานของผู้ป่วยด้านบนตารางแล็บ
             st.write(f"**รหัสประจำตัวผู้ป่วยนอก:** `{selected_hn}` | **อายุ:** {int(get_val('Age', 0))} ปี | **อุณหภูมิแรกรับ:** {get_val('body_temp', get_val('temp', 37.5))} °C")
             
-            # 🟢 [ตารางแสดงผล CBC 14 ตัวแปรจริง] ดึงค่าจริงตรงตามไฟล์ Excel ของท่านคำต่อคำ ไม่เพี้ยน
+            # [ตารางแสดงผล CBC 14 ตัวแปรจริง] ดึงค่าจริงตรงตามไฟล์ Excel ของท่านคำต่อคำ ไม่เพี้ย
             real_cbc = pd.DataFrame({
                 'Parameters': [
                     'Hct (Hematocrit)', 'Wbc (WBC Count)', 'Rbc (RBC Count)', 'Plt (Platelet)', 
@@ -206,7 +206,7 @@ if df_patients is not None:
             st.write("#### ผลการประเมินความเสี่ยงและคำแนะนำสนับสนุนการตัดสินใจทางคลินิก")
             st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{prob_val:.2f} %**")
             
-            # 🛠️ [จุดแก้ไขสําคัญ] จัดเรียงเยื้องแนวบล็อกคำสั่งแจ้งเตือนหลังกดปุ่มให้ตรงเป๊ะทุกระดับความเสี่ยง ป้องกันข้อผิดพลาด Line 213
+            # บล็อกคำสั่งแจ้งเตือนหลังกดปุ่มที่ทำการล้างการจัดหน้า 4 spaces เท่ากันหมด ปลอดภัย 100%
             if process_btn:
                 if risk_val == "high":
                     st.error("🚨 แนะนำทางการแพทย์: ความเสี่ยงสูง (แนะนำตรวจ Rapid Influenza Test)")
