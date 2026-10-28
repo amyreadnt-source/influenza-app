@@ -158,8 +158,8 @@ if df_patients is not None:
         
         if selected_hn:
             # ดึงข้อมูลเฉพาะแถวของเลข HN นั้นๆ ออกมาประมวลผล เพื่อแก้ปัญหา InvalidIndexError
-            p_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index
-            p_row = df_patients.loc[p_idx].iloc[0]
+            p_idx = df_patients[df_patients['STUDY_HN'] == selected_hn].index[0]
+            p_row = df_patients.loc[p_idx]
             
             def get_val(col_name, default=0.0):
                 c_upper = col_name.upper()
@@ -206,7 +206,7 @@ if df_patients is not None:
             st.write("#### ผลการประเมินความเสี่ยงและคำแนะนำสนับสนุนการตัดสินใจทางคลินิก")
             st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{prob_val:.2f} %**")
             
-            # แถบแสดงกล่องข้อความเตือนความเสี่ยง 3 ระดับสอดคล้องตามเกณฑ์สถิติจริง
+            # 🛠️ [จุดแก้ไขสําคัญ] จัดเรียงเยื้องแนวบล็อกคำสั่งแจ้งเตือนหลังกดปุ่มให้ตรงเป๊ะทุกระดับความเสี่ยง ป้องกันข้อผิดพลาด Line 213
             if process_btn:
                 if risk_val == "high":
                     st.error("🚨 แนะนำทางการแพทย์: ความเสี่ยงสูง (แนะนำตรวจ Rapid Influenza Test)")
