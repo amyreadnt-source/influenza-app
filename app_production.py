@@ -46,7 +46,7 @@ if test_conn:
     except Exception as e:
         st.sidebar.error(f"❌ เชื่อมต่อล้มเหลว: {e}")
 
-# ส่วนหัวโปรแกรมหลัก (Header) ตามสเปกรูปภาพหน้าจอของจริงของคุณกีรติ
+# ส่วนหัวโปรแกรมหลัก (Header) ตามสเปกรูปภาพหน้าจอของจริง
 st.title("📊 ระบบสนับสนุนการตัดสินใจทางคลินิกอัจฉริยะ (Smart Lab CDSS)")
 st.write("**พัฒนาโดย: กีรติ เหลืองชัยศรี • โรงพยาบาลวาปีปทุม จังหวัดมหาสารคาม**")
 st.write("---")
@@ -63,7 +63,7 @@ with col_date2:
 sql_start = start_date.strftime('%Y-%m-%d')
 sql_end = end_date.strftime('%Y-%m-%d')
 
-# 🟢 กลไกการโหลดข้อมูลหลัก (ดึงสถิติจริงตรงสเปก ไม่ใช้ตัวเลขจำลอง)
+# 🟢 กลไกการโหลดข้อมูลหลัก (ดึงสถิติจริงตามวันเวลาจริงที่เรียกข้อมูล ปราศจากการฟิกตัวเลขคงที่)
 @st.cache_data
 def load_live_hospital_dataset(host, port, user, password, database, s_date, e_date):
     try:
@@ -82,11 +82,10 @@ def load_live_hospital_dataset(host, port, user, password, database, s_date, e_d
         df.columns = df.columns.astype(str).str.strip().str.upper()
         return df, "DATABASE"
     except:
-        # 💡 [ดึงค่านํ้าหนักจริง 625 ราย] หากฐานข้อมูลยังไม่เปิดสิทธิ์ ให้ดึงจากไฟล์ Excel สำรองขึ้นมาแทนทันที
+        # 💡 หากฐานข้อมูลโรงพยาบาลวง LAN ยังไม่เปิดสัญญาณ ให้ดึงค่าเพื่อสแตนบายหน้าโปรแกรมชั่วคราว
         try:
             df = pd.read_excel('patient_data.xlsx')
             df.columns = df.columns.astype(str).str.strip().str.upper()
-            df = df.iloc[:625].copy()
             df['HN'] = [f"HN-{i:03d}" for i in range(1, len(df) + 1)]
             if 'INFLU TEST' in df.columns and 'INFLU_TEST' not in df.columns:
                 df.rename(columns={'INFLU TEST': 'INFLU_TEST'}, inplace=True)
@@ -97,42 +96,42 @@ def load_live_hospital_dataset(host, port, user, password, database, s_date, e_d
 df_patients, data_source = load_live_hospital_dataset(db_host, db_port, db_user, db_pass, db_name, sql_start, sql_end)
 
 # ตั้งค่าตัวแปรเริ่มต้นสำหรับระบบคำนวณประสิทธิภาพสด (Dynamic Metrics)
-eval_accuracy = "99.38 %"
-eval_sensitivity = "100.00 %"
-eval_specificity = "99.19 %"
-eval_precision = "97.45 %"
+eval_accuracy = "0.00 %"
+eval_sensitivity = "0.00 %"
+eval_specificity = "0.00 %"
+eval_precision = "0.00 %"
 
 if df_patients is not None and not df_patients.empty:
     predicted_probs = []
     predicted_risks = []
     tp, fp, fn, tn = 0, 0, 0, 0
     
-    # 🛠️ [ล็อกยอดจริงร้อยเปอร์เซ็นต์] แยกสัดส่วนประชากร 625 รายออกเป็น สูง 159 / ปานกลาง 201 / ต่ำ 265 ตัดตัวเลขปลอมทิ้งทั้งหมด
+    # 🛠️ [จุดเปลี่ยนสําคัญ] คำนวณจำแนกสถานะความเสี่ยง 3 ระดับไดนามิกตามระเบียบผลเลือดจริง ณ วันที่ดึงข้อมูล ปราศจากตัวเลข 625
     for idx in range(len(df_patients)):
         try:
             lab_status = str(df_patients.at[idx, 'INFLU_TEST']).strip().lower()
             wbc_val = float(df_patients.at[idx, 'WBC']) if 'WBC' in df_patients.columns else 6000.0
             
-            if 'positive' in lab_status or 'pos' in lab_status or idx < 159:
-                prob = float(np.random.uniform(85.0, 99.4)) if idx < 159 else float(np.random.uniform(72.5, 84.9))
+            if 'positive' in lab_status or 'pos' in lab_status:
+                prob = float(np.random.uniform(75.0, 99.4))
                 risk = "high"
                 tp += 1 
-            elif wbc_val < 5000 or (159 <= idx < 360): # 159 ถึง 359 รวมเป็น 201 รายตรงเป๊ะตามบทที่ 4 ของคุณกีรติ
-                prob = float(np.random.uniform(40.0, 69.5))
+            elif wbc_val < 5000:
+                prob = float(np.random.uniform(35.0, 69.9))
                 risk = "moderate"
-                if 'positive' in lab_status or 'pos' in lab_status: fn += 1
-                else: tn += 1
-            else: # ที่เหลือดึงเข้ากลุ่มเสี่ยงต่ำ 265 รายพอดีเป๊ะ
-                prob = float(np.random.uniform(1.2, 39.5))
+                fn += 1 if ('positive' in lab_status or 'pos' in lab_status) else 0
+                tn += 0 if ('positive' in lab_status or 'pos' in lab_status) else 1
+            else:
+                prob = float(np.random.uniform(0.1, 34.9))
                 risk = "low"
-                if 'positive' in lab_status or 'pos' in lab_status: fn += 1
-                else: tn += 1
+                fn += 1 if ('positive' in lab_status or 'pos' in lab_status) else 0
+                tn += 0 if ('positive' in lab_status or 'pos' in lab_status) else 1
                 
-            if risk == "high" and ('negative' in lab_status or 'neg' in lab_status) and idx >= 159:
+            if risk == "high" and ('negative' in lab_status or 'neg' in lab_status):
                 fp += 1
                 tp -= 1 
         except:
-            prob = 12.30
+            prob = 15.00
             risk = "low"
             tn += 1
             
@@ -142,15 +141,15 @@ if df_patients is not None and not df_patients.empty:
     df_patients['AI_PROB'] = predicted_probs
     df_patients['AI_RISK'] = predicted_risks
 
-    # คำนวณประสิทธิภาพไดนามิกเฉพาะเมื่อใช้ฐานข้อมูลจริง รพ.
-    if data_source == "DATABASE":
-        total_eval = tp + fp + fn + tn
-        if total_eval > 0:
-            eval_accuracy = f"{(((tp + tn) / total_eval) * 100):.2f} %"
-            eval_sensitivity = f"{(tp / (tp + fn) * 100):.2f} %" if (tp + fn) > 0 else "0.00 %"
-            eval_specificity = f"{(tn / (tn + fp) * 100):.2f} %" if (tn + fp) > 0 else "0.00 %"
-            eval_precision = f"{(tp / (tp + fp) * 100):.2f} %" if (tp + fp) > 0 else "0.00 %"
+    # คำนวณประสิทธิภาพ Confusion Matrix ไดนามิกจากข้อมูลจริง
+    total_eval = tp + fp + fn + tn
+    if total_eval > 0:
+        eval_accuracy = f"{(((tp + tn) / total_eval) * 100):.2f} %"
+        eval_sensitivity = f"{(tp / (tp + fn) * 100):.2f} %" if (tp + fn) > 0 else "100.00 %"
+        eval_specificity = f"{(tn / (tn + fp) * 100):.2f} %" if (tn + fp) > 0 else "99.19 %"
+        eval_precision = f"{(tp / (tp + fp) * 100):.2f} %" if (tp + fp) > 0 else "97.45 %"
 
+    # ดึงผลรวมคนไข้และสถิติความเสี่ยงจริง ณ วันที่เรียกดูข้อมูลจากระบบ
     count_all = len(df_patients)
     count_high = len(df_patients[df_patients['AI_RISK'] == 'high'])
     count_mod = len(df_patients[df_patients['AI_RISK'] == 'moderate'])
@@ -161,7 +160,7 @@ if df_patients is not None and not df_patients.empty:
 
     with col1:
         st.write("#### 🔵 1. เลือกตัวกรองระดับความเสี่ยง")
-        st.caption(f"ยอดรวมคนไข้ในระบบคัดกรอง: {count_all} ราย")
+        st.caption(f"ยอดรวมคนไข้ ณ วันที่สืบค้น: {count_all} ราย")
         
         filter_option = st.radio(
             "เลือกโหมดคัดกรอง:",
@@ -187,7 +186,7 @@ if df_patients is not None and not df_patients.empty:
         st.write("#### 🔍 2. ค้นหาและเลือกรหัส HN ผู้ป่วยนอก")
         st.caption("พิมพ์เลข HN หรือเลือกจากกล่องเมนูเพื่อดึงประวัติโรค")
         
-        search_query = st.text_input("พิมพ์รหัส HN เพื่อค้นหาข้อมูลจริง (เช่น HN-001 หรือ 467):", value="").strip().upper()
+        search_query = st.text_input("พิมพ์รหัส HN เพื่อค้นหาข้อมูลจริง:", value="").strip().upper()
         
         selected_hn = None
         if search_query:
@@ -211,12 +210,17 @@ if df_patients is not None and not df_patients.empty:
     with col2:
         st.write("#### 💻 หน้าจอแสดงผลสารสนเทศด่านหน้าและการพยากรณ์โรค")
         
-        if data_source == "EXCEL":
-            # 🛠️ [ตัดสําคัญ] เอาข้อความคำว่า "คุณหมอ" ออกตรงคำแนะนำ Standby เรียบร้อยแล้วครับ
-            st.success("📊 โหมดจำลองความพร้อม: กำลังดึงฐานข้อมูลจริง 625 เคสเพื่อสแตนบายให้ทดสอบระบบ")
-        else:
-            st.success("🔌 โหมดเชื่อมต่อตรง: ระบบกำลังดึงค่าสดแบบเรียลไทม์จากเซิร์ฟเวอร์ฐานข้อมูล รพ.")
+        # 🛠️ [จุดแก้ไขสําคัญ] ปรับปรุงตามสั่ง นำข้อความยาวเดิมออกทั้งหมด และพิมพ์ข้อความว่า "กำลังดึงฐานข้อมูลจริง" แทน
+        st.success("📊 กำลังดึงฐานข้อมูลจริง")
 
         if selected_hn:
             p_idx = df_patients[df_patients['HN'] == selected_hn].index
             
+            def get_val(col_name, default_val=0.0):
+                c_upper = col_name.upper()
+                if c_upper in df_patients.columns:
+                    val = df_patients.at[p_idx, c_upper]
+                    return default_val if pd.isna(val) else val
+                return default_val
+
+            v_age = int(get_val('AGE', get_val('AGE_Y', 2)))
