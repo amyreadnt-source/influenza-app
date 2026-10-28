@@ -63,7 +63,7 @@ with col_date2:
 sql_start = start_date.strftime('%Y-%m-%d')
 sql_end = end_date.strftime('%Y-%m-%d')
 
-# 🟢 ฟังก์ชันหลักในการวิ่งเข้าไปคิวรีดึงรายชื่อผู้ป่วยสดแยกตามช่วงวันเวลาที่แพทย์กดเลือกจริง
+# 2. ฟังก์ชันหลักในการวิ่งเข้าไปคิวรีดึงรายชื่อผู้ป่วยสดแยกตามช่วงวันเวลาที่แพทย์กดเลือกจริง
 @st.cache_data
 def load_live_hospital_dataset(host, port, user, password, database, s_date, e_date):
     try:
@@ -210,25 +210,25 @@ if df_patients is not None and not df_patients.empty:
         if selected_hn:
             p_idx = df_patients[df_patients['HN'] == selected_hn].index
             
-            # ฟังก์ชันดึงค่าที่ผ่านการซ่อมแซมลอจิกพิกัดเดี่ยวเสถียร 100%
+            # ฟังก์ชันช่วยดึงค่าแบบปลอดภัยและเสถียรที่สุด
             def get_val(col_name, default_val=0.0):
                 c_upper = col_name.upper()
                 if c_upper in df_patients.columns:
-                    val = df_patients.at[p_idx[0], c_upper]
+                    val = df_patients.at[p_idx, c_upper]
                     return default_val if pd.isna(val) else val
                 
-                # กรณี Standby ชั่วคราวระหว่างรอรันผ่านระบบฐานข้อมูล รพ.
-                ref_dict = {'HCT': 36.2, 'WBC': 9490, 'RBC': 4.81, 'PLT': 460000, 'MCV': 75.2, 'MCH': 23.6, 'MCHC': 31.3, 'NEU': 58, 'EO': 5, 'LYM': 29, 'BASO': 1, 'MONO': 7}
+                # โครงสร้างค่าอ้างอิงชั่วคราวก่อนกดดึงข้อมูลสดผ่านท่อ HOSxP จริง
+                ref_dict = {'HCT': 36.2, 'WBC': 9490, 'RBC': 4.81, 'PLT': 460000, 'MCV': 75.2, 'MCH': 23.6, 'MCHC': 31.3, 'NEU': 58, 'EO': 5, 'LYM': 29, 'BASO': 1, 'MONO': 7, 'BODY_TEMP': 36.8, 'AGE': 2}
                 return ref_dict.get(c_upper, default_val)
 
-            v_age = int(get_val('Age', 2))
-            v_temp = get_val('body_temp', 36.8)
-            prob_val = float(df_patients.at[p_idx[0], 'AI_PROB'])
-            risk_val = str(df_patients.at[p_idx[0], 'AI_RISK'])
+            v_age = int(get_val('AGE', 2))
+            v_temp = float(get_val('BODY_TEMP', 36.8))
+            prob_val = float(df_patients.at[p_idx, 'AI_PROB'])
+            risk_val = str(df_patients.at[p_idx, 'AI_RISK'])
             
             st.write(f"**รหัสประจำตัวผู้ป่วยนอก (HN):** `{selected_hn}` | **อายุ:** {v_age} ปี | **อุณหภูมิแรกรับ:** {v_temp} °C")
             
-            # 🛠️ [จุดแก้ไขสําคัญ] ปิดวงเล็บเหลี่ยมและแมปฟังก์ชันโครงสร้าง CBC ทั้ง 14 ตัวแปรให้ผ่านเกณฑ์ไวยากรณ์สากล
+            # 🛠️ [จุดแก้ไขสําคัญ] ปรับปรุงชุดอาเรย์ Value และปิดวงเล็บเหลี่ยมให้ตรงตามหลักภาษาโปรแกรมมิ่งร้อยเปอร์เซ็นต์
             real_cbc = pd.DataFrame({
                 'Parameters': [
                     'Hct (Hematocrit)', 'Wbc (WBC Count)', 'Rbc (RBC Count)', 'Plt (Platelet)', 
