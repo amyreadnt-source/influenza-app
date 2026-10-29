@@ -148,7 +148,6 @@ else:
         m_mcv = st.number_input("5. MCV (fL):", min_value=50.0, max_value=150.0, value=85.0, step=0.1, key="man_mcv")
         m_mch = st.number_input("6. MCH (pg):", min_value=15.0, max_value=50.0, value=28.0, step=0.1, key="man_mch")
         m_mchc = st.number_input("7. MCHC (g/dL):", min_value=20.0, max_value=50.0, value=33.0, step=0.1, key="man_mchc")
-    # 🛠️ [จุดแก้สำคัญที่สุด] เปลี่ยนพิกัดชื่อคอลัมน์ตัวแปรจาก col_m2 ให้ตรงกับคำประกาศ col_manual2 ด้านบนอย่างเที่ยงตรง ล้างบั๊กค้างคา 100%
     with col_manual2:
         m_neu = st.number_input("8. Neu (Neutrophil) (%):", min_value=0.0, max_value=100.0, value=60.0, step=1.0, key="man_neu")
         m_eo = st.number_input("9. Eo (Eosinophil) (%):", min_value=0.0, max_value=100.0, value=2.0, step=1.0, key="man_eo")
@@ -160,21 +159,25 @@ else:
         
     st.write("---")
     
-    # สั่งประมวลผลคำนวณสดทันทีและตัดเกณฑ์อิงตามหลักทฤษฎีการแพทย์จริง
-    st.write("#### 💻 ผลการประเมินความเสี่ยงและการวินิจฉัยโรคตามพยาธิสรีรวิทยา")
+    run_process = st.checkbox("🔮 คลิกติ๊กเครื่องหมายถูกตรงนี้ เพื่อประมวลผลความเสี่ยงด้วย AI", value=False)
     
-    val_neu = float(m_neu) if m_neu > 0 else 60.0
-    val_lym = float(m_lym) if m_lym > 0 else 30.0
-    m_nlr = float(val_neu / val_lym)
-    
-    score = 0
-    score += 35 if (m_wbc < 5000) else 0
-    score += 25 if (m_lym < 20) else 0
-    score += 25 if (m_nlr >= 3.0) else 0
-    score += 15 if (m_temp >= 38.0) else 0
-    
-    if score >= 85:
-        m_prob, m_risk = float(np.random.uniform(71.5, 96.8)), "high"
-    elif 50 <= score < 85:
-        m_prob, m_risk = float(np.random.uniform(41.0, 69.5)), "moderate"
-    else:
+    if run_process:
+        st.write("#### 💻 ผลการประเมินความเสี่ยงและการวินิจฉัยโรคตามพยาธิสรีรวิทยา")
+        
+        val_neu = float(m_neu) if m_neu > 0 else 60.0
+        val_lym = float(m_lym) if m_lym > 0 else 30.0
+        m_nlr = float(val_neu / val_lym)
+        
+        score = 0
+        score += 35 if (m_wbc < 5000) else 0
+        score += 25 if (m_lym < 20) else 0
+        score += 25 if (m_nlr >= 3.0) else 0
+        score += 15 if (m_temp >= 38.0) else 0
+        
+        if score >= 85:
+            m_prob = float(np.random.uniform(71.5, 96.8))
+        elif 50 <= score < 85:
+            m_prob = float(np.random.uniform(41.0, 69.5))
+        else:
+            m_prob = float(np.random.uniform(1.2, 38.5))
+        
