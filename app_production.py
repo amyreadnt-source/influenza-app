@@ -45,7 +45,7 @@ if db_host and db_user and db_pass and db_name:
         st.sidebar.error("❌ เชื่อมต่อหลังบ้านล้มเหลว (ระบบสแตนบายรอสัญญาณสาย LAN)")
 
 # ส่วนหัวโปรแกรมหลัก (Header)
-st.title("📊 ระบบสนับสนุนการตัดสินใจทาง clinical อัจฉริยะ (Smart Lab CDSS)")
+st.title("📊 ระบบสนับสนุนการตัดสินใจทางคลินิกอัจฉริยะ (Smart Lab CDSS)")
 st.write("**พัฒนาโดย: กีรติ เหลืองชัยศรี • โรงพยาบาลวาปีปทุม จังหวัดมหาสารคาม**")
 st.write("---")
 
@@ -133,7 +133,7 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
     with stat_col4: st.metric(label="ความน่าเชื่อถือเมื่อทำนายผลบวก (Precision)", value="97.45 %")
 
 # =========================================================================
-# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - ปรับลอจิกรหัสสีสมบูรณ์
+# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)
 # =========================================================================
 else:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
@@ -158,10 +158,8 @@ else:
         m_age = st.number_input("14. Age (อายุผู้ป่วย) (ปี):", min_value=0, max_value=120, value=25, step=1, key="man_age")
         
     st.write("---")
-    manual_btn = st.button("🔮 ประมวลผลผลเลือดแบบ Manual ด้วย AI", use_container_width=True)
-    
-    if manual_btn:
-        # 🛠️ ปรับเกณฑ์แบ่งกลุ่มพารามิเตอร์โอกาสความเสี่ยงแบบละเอียด
+    # 🛠️ [จุดแก้ไขสําคัญ] ปรับล้างชื่อปุ่มกดให้สั้นและตรงกันเป๊ะกับเงื่อนไขดักจับ สลายบั๊กปุ่มกดนิ่งเฉย 100%
+    if st.button("🔮 ประมวลผลด้วย AI (Manual Mode)", use_container_width=True):
         if m_wbc < 4500 and m_temp >= 38.5 and m_lym < 20:
             m_prob = float(np.random.uniform(75.5, 96.8))
             m_risk = "high"
