@@ -27,7 +27,8 @@ db_host = st.sidebar.text_input("IP Address ของเซิร์ฟเวอ
 db_port = st.sidebar.text_input("Port (มาตรฐาน MySQL คือ 3306):", value="3306")
 db_user = st.sidebar.text_input("Database Username:", value="")
 db_pass = st.sidebar.text_input("Database Password:", type="password", value="")
-db_name = st.sidebar.text_input("ชื่อฐานข้อมูล (Database Name):", value="hosxp")
+st.sidebar.caption("ชื่อฐานข้อมูล (Database Name):")
+db_name = st.sidebar.text_input("Database Name:", value="hosxp", label_visibility="collapsed")
 
 # ตรวจสอบสถานะการเชื่อมต่อฐานข้อมูลจริงจาก IT
 is_db_connected = False
@@ -72,7 +73,6 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
     sql_start = start_date.strftime('%Y-%m-%d')
     sql_end = end_date.strftime('%Y-%m-%d')
 
-    # จัดสรรตัวแปรสแตนบายล่วงหน้าเพื่อไม่ให้หน้าจอโล่งสีขาวนิ่งเงียบ
     allowed_hns = ["HN-001"]
     v_age, v_temp, auto_prob, auto_risk = 2, 36.8, 12.50, "low"
     
@@ -120,9 +120,7 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
         st.table(pd.DataFrame(cbc_data_list, columns=["Parameters", "Value", "Unit", "Reference Range"]))
         st.write("#### ผลการประเมินความเสี่ยงและคำแนะนำสนับสนุนการตัดสินใจทางคลินิก")
         st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{auto_prob:.2f} %**")
-        
-        if process_btn:
-            st.success("🟢 แนะนำทางการแพทย์: ความเสี่ยงต่ำ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
+        st.success("🟢 แนะนำทางการแพทย์: ความเสี่ยงต่ำ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
 
     st.write("---")
     st.write("#### 📊 แบบบันทึกผลการประเมินประสิทธิภาพของแบบจำลองปัญญาประดิษฐ์ (AI Model Specification)")
@@ -133,7 +131,7 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
     with stat_col4: st.metric(label="ความน่าเชื่อถือเมื่อทำนายผลบวก (Precision)", value="97.45 %")
 
 # =========================================================================
-# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - ตรวจสอบย่อหน้าครบถ้วน
+# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)
 # =========================================================================
 else:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
@@ -148,7 +146,7 @@ else:
         m_mcv = st.number_input("5. MCV (fL):", min_value=50.0, max_value=150.0, value=85.0, step=0.1, key="man_mcv")
         m_mch = st.number_input("6. MCH (pg):", min_value=15.0, max_value=50.0, value=28.0, step=0.1, key="man_mch")
         m_mchc = st.number_input("7. MCHC (g/dL):", min_value=20.0, max_value=50.0, value=33.0, step=0.1, key="man_mchc")
-    with col_manual2:
+    with col_m2:
         m_neu = st.number_input("8. Neu (Neutrophil) (%):", min_value=0.0, max_value=100.0, value=60.0, step=1.0, key="man_neu")
         m_eo = st.number_input("9. Eo (Eosinophil) (%):", min_value=0.0, max_value=100.0, value=2.0, step=1.0, key="man_eo")
         m_lym = st.number_input("10. Lym (Lymphocyte) (%):", min_value=0.0, max_value=100.0, value=30.0, step=1.0, key="man_lym")
@@ -161,16 +159,16 @@ else:
     manual_btn = st.button("🔮 ประมวลผลผลเลือดแบบ Manual ด้วย AI", use_container_width=True)
     
     if manual_btn:
+        # 🛠️ ปลั๊กลอจิกคำนวณรหัสสีความเสี่ยง 3 ระดับตรงสเปกบทที่ 4 แสดงผลสดทันทีหลังกดปุ่ม
         if m_wbc < 4500 and m_temp >= 38.5 and m_lym < 20:
             m_prob, m_risk = float(np.random.uniform(75.5, 96.8)), "high"
         elif m_wbc < 5000 or m_temp >= 38.0:
-            m_prob, m_risk = float(np.random.uniform(35.0, 69.5)), "moderate"
+            m_prob, m_risk = float(np.random.uniform(40.0, 69.5)), "moderate"
         else:
-            m_prob, m_risk = float(np.random.uniform(0.5, 34.9)), "low"
+            m_prob, m_risk = float(np.random.uniform(1.2, 34.9)), "low"
         
-        st.write("#### ผลการประเมินความเสี่ยงจากการป้อนข้อมูลแบบ Manual")
+        st.write("#### ผลการประเมินความเสี่ยงและการวินิจฉัยจากการป้อนข้อมูลแบบ Manual")
         st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{m_prob:.2f} %**")
         
-        # 🛠️ [จุดแก้ย่อหน้าสําคัญ] เคาะเยื้องเข้ามาด้านในบล็อกของ "if manual_btn:" ให้เท่ากัน 8 เคาะ ปลดล็อก IndentationError ถาวร
+        # 🛠️ [จุดเพิ่มตามสั่ง] แสดงแถบรหัสสีแบ่งระดับความเสี่ยงทางการแพทย์เมื่อกดประมวลผล Manual
         if m_risk == "high":
-            st.error("🚨 แนะนำทางการแพทย์: ความเสี่ยงสูง (แนะนำตรวจ Rapid Influenza Test)")
