@@ -6,11 +6,7 @@ import mysql.connector
 from datetime import datetime, timedelta
 
 # ตั้งค่าหน้าจอและการแสดงผลเว็บแบบกว้าง (Wide Layout) สำหรับระบบติดตั้งใช้งานจริงใน รพ.
-st.set_page_config(page_title="Smart Lab CDSS - Live & Manual System", layout="wide")
-
-# สั่งล้างระบบความจำแคชเก่าทั้งหมดเพื่อให้ระบบดีเทคข้อมูลใหม่ได้อย่างถูกต้องรวดเร็ว
-st.cache_data.clear()
-st.cache_resource.clear()
+st.set_page_config(page_title="Smart Lab CDSS - Production System", layout="wide")
 
 # 1. กลไกการโหลดทรัพยากรตัวแบบจำลองปัญญาประดิษฐ์และ Scaler สำเร็จรูป
 @st.cache_resource
@@ -130,7 +126,7 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
                 if selected_hn:
                     p_match = df_patients[df_patients['HN'] == selected_hn]
                     if not p_match.empty:
-                        p_row = p_match.iloc
+                        p_row = p_match.iloc[0]
                         
                         def get_val(col_name):
                             c_upper = col_name.upper()
@@ -186,3 +182,5 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
             tp, fp, fn, tn = 0, 0, 0, 0
             for idx in range(len(df_patients)):
                 lab_status = str(df_patients.at[idx, 'INFLU_TEST']).strip().lower()
+                wbc_val = float(df_patients.at[idx, 'WBC']) if 'WBC' in df_patients.columns else 6000.0
+                if 'positive' in lab_status or 'pos' in lab_status: tp += 1
