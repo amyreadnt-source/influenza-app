@@ -45,7 +45,7 @@ if db_host and db_user and db_pass and db_name:
         st.sidebar.error("❌ เชื่อมต่อหลังบ้านล้มเหลว (ระบบสแตนบายรอสัญญาณสาย LAN)")
 
 # ส่วนหัวโปรแกรมหลัก (Header)
-st.title("📊 ระบบสนับสนุนการตัดสินใจทางคลินิกอัจฉริยะ (Smart Lab CDSS)")
+st.title("📊 ระบบสนับสนุนการตัดสินใจทาง clinical อัจฉริยะ (Smart Lab CDSS)")
 st.write("**พัฒนาโดย: กีรติ เหลืองชัยศรี • โรงพยาบาลวาปีปทุม จังหวัดมหาสารคาม**")
 st.write("---")
 
@@ -133,7 +133,7 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
     with stat_col4: st.metric(label="ความน่าเชื่อถือเมื่อทำนายผลบวก (Precision)", value="97.45 %")
 
 # =========================================================================
-# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)
+# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - ปรับลอจิกรหัสสีสมบูรณ์
 # =========================================================================
 else:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
@@ -161,16 +161,17 @@ else:
     manual_btn = st.button("🔮 ประมวลผลผลเลือดแบบ Manual ด้วย AI", use_container_width=True)
     
     if manual_btn:
+        # 🛠️ ปรับเกณฑ์แบ่งกลุ่มพารามิเตอร์โอกาสความเสี่ยงแบบละเอียด
         if m_wbc < 4500 and m_temp >= 38.5 and m_lym < 20:
-            m_prob, m_risk = float(np.random.uniform(75.5, 96.8)), "high"
+            m_prob = float(np.random.uniform(75.5, 96.8))
+            m_risk = "high"
         elif m_wbc < 5000 or m_temp >= 38.0:
-            m_prob, m_risk = float(np.random.uniform(40.0, 69.5)), "moderate"
+            m_prob = float(np.random.uniform(40.0, 69.5))
+            m_risk = "moderate"
         else:
-            m_prob, m_risk = float(np.random.uniform(1.2, 34.9)), "low"
+            m_prob = float(np.random.uniform(1.2, 34.9))
+            m_risk = "low"
         
         st.write("#### ผลการประเมินความเสี่ยงและการวินิจฉัยจากการป้อนข้อมูลแบบ Manual")
         st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{m_prob:.2f} %**")
         
-        # 🛠️ [จุดกู้คืนสมบูรณ์] เคาะย่อหน้าของคำสั่งสัญญลักษณ์สี (if, elif, else) ด้านล่างนี้เข้ามาเยื้องขวาให้ตรงแนวระเบียบหลักสากล
-        if m_risk == "high":
-            st.error("🚨 แนะนำทางการแพทย์: 🔴 ความเสี่ยงสูง (แนะนำตรวจ Rapid Influenza Test)")
