@@ -24,7 +24,7 @@ def load_ai_resources():
 
 model, scaler = load_ai_resources()
 
-# 🛠️ แผงตั้งค่าการเชื่อมต่อฐานข้อมูลสำหรับ IT (Sidebar Configuration) คล้ายโปรแกรมสำเร็จรูปทั่วไป
+# 🛠 ... แผงตั้งค่าการเชื่อมต่อฐานข้อมูลสำหรับ IT (Sidebar Configuration) คล้ายโปรแกรมสำเร็จรูปทั่วไป
 st.sidebar.header("⚙️ ตั้งค่าการเชื่อมต่อฐานข้อมูล รพ.")
 st.sidebar.caption("for IT Connect to HOSxP Backup Database")
 db_host = st.sidebar.text_input("IP Address ของเซิร์ฟเวอร์ฐานข้อมูล:", value="")
@@ -130,7 +130,7 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
                 if selected_hn:
                     p_match = df_patients[df_patients['HN'] == selected_hn]
                     if not p_match.empty:
-                        p_row = p_match.iloc[0]
+                        p_row = p_match.iloc
                         
                         def get_val(col_name):
                             c_upper = col_name.upper()
@@ -170,7 +170,7 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
                             auto_prob, auto_risk = float(np.random.uniform(1.2, 34.9)), "low"
                         
                         st.write("#### ผลการประเมินความเสี่ยงและคำแนะนำสนับสนุนการตัดสินใจทางคลินิก")
-                        st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไขหวัดใหญ่: **{auto_prob:.2f} %**")
+                        st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{auto_prob:.2f} %**")
                         
                         if process_btn:
                             if auto_risk == "high":
@@ -180,7 +180,11 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
                             else:
                                 st.success("🟢 แนะนำทางการแพทย์: ความเสี่ยงต่ำ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
 
-            # 🛠️ [จุดแก้ไขสำคัญที่สุด] ย้ายแผงประสิทธิภาพ AI มาฝังไว้ในเงื่อนไขโหมดดึงอัตโนมัติเท่านั้น เพื่อให้แสดงผลขึ้นมาทีหลังจากเชื่อมฐานข้อมูลสำเร็จ
             st.write("---")
             st.write("#### 📊 แบบบันทึกผลการประเมินประสิทธิภาพของแบบจำลองปัญญาประดิษฐ์ (AI Model Specification)")
             
+            tp, fp, fn, tn = 0, 0, 0, 0
+            for idx in range(len(df_patients)):
+                lab_status = str(df_patients.at[idx, 'INFLU_TEST']).strip().lower()
+                wbc_val = float(df_patients.at[idx, 'WBC']) if 'WBC' in df_patients.columns else 6000.0
+
