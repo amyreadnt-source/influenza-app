@@ -120,7 +120,9 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
         st.table(pd.DataFrame(cbc_data_list, columns=["Parameters", "Value", "Unit", "Reference Range"]))
         st.write("#### ผลการประเมินความเสี่ยงและคำแนะนำสนับสนุนการตัดสินใจทางคลินิก")
         st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{auto_prob:.2f} %**")
-        st.success("🟢 แนะนำทางการแพทย์: ความเสี่ยงต่ำ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
+        
+        if process_btn:
+            st.success("🟢 แนะนำทางการแพทย์: ความเสี่ยงต่ำ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
 
     st.write("---")
     st.write("#### 📊 แบบบันทึกผลการประเมินประสิทธิภาพของแบบจำลองปัญญาประดิษฐ์ (AI Model Specification)")
@@ -146,7 +148,7 @@ else:
         m_mcv = st.number_input("5. MCV (fL):", min_value=50.0, max_value=150.0, value=85.0, step=0.1, key="man_mcv")
         m_mch = st.number_input("6. MCH (pg):", min_value=15.0, max_value=50.0, value=28.0, step=0.1, key="man_mch")
         m_mchc = st.number_input("7. MCHC (g/dL):", min_value=20.0, max_value=50.0, value=33.0, step=0.1, key="man_mchc")
-    with col_m2:
+    with col_manual2:
         m_neu = st.number_input("8. Neu (Neutrophil) (%):", min_value=0.0, max_value=100.0, value=60.0, step=1.0, key="man_neu")
         m_eo = st.number_input("9. Eo (Eosinophil) (%):", min_value=0.0, max_value=100.0, value=2.0, step=1.0, key="man_eo")
         m_lym = st.number_input("10. Lym (Lymphocyte) (%):", min_value=0.0, max_value=100.0, value=30.0, step=1.0, key="man_lym")
@@ -159,7 +161,6 @@ else:
     manual_btn = st.button("🔮 ประมวลผลผลเลือดแบบ Manual ด้วย AI", use_container_width=True)
     
     if manual_btn:
-        # 🛠️ ปลั๊กลอจิกคำนวณรหัสสีความเสี่ยง 3 ระดับตรงสเปกบทที่ 4 แสดงผลสดทันทีหลังกดปุ่ม
         if m_wbc < 4500 and m_temp >= 38.5 and m_lym < 20:
             m_prob, m_risk = float(np.random.uniform(75.5, 96.8)), "high"
         elif m_wbc < 5000 or m_temp >= 38.0:
@@ -170,5 +171,6 @@ else:
         st.write("#### ผลการประเมินความเสี่ยงและการวินิจฉัยจากการป้อนข้อมูลแบบ Manual")
         st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{m_prob:.2f} %**")
         
-        # 🛠️ [จุดเพิ่มตามสั่ง] แสดงแถบรหัสสีแบ่งระดับความเสี่ยงทางการแพทย์เมื่อกดประมวลผล Manual
+        # 🛠️ [จุดกู้คืนสำเร็จ] เคาะเยื้องให้เท่ากัน 8 Space ภายใต้บล็อก "if manual_btn:" เพื่อแก้พาร์ทรหัสสีแสดงผลให้ถูกต้องผ่านฉลุย
         if m_risk == "high":
+            st.error("🚨 แนะนำทางการแพทย์: 🔴 ความเสี่ยงสูง (แนะนำตรวจ Rapid Influenza Test)")
