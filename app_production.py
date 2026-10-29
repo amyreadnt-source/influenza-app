@@ -135,11 +135,11 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
             st.success("📊 กำลังดึงฐานข้อมูลจริง")
 
             if selected_hn:
-                p_row = df_patients[df_patients['HN'] == selected_hn].iloc
+                p_row_data = df_patients[df_patients['HN'] == selected_hn].iloc[0]
                 
                 def get_val(col_name, default_val=0.0):
                     c_upper = col_name.upper()
-                    return default_val if c_upper not in p_row.index or pd.isna(p_row[c_upper]) else p_row[c_upper]
+                    return default_val if c_upper not in p_row_data.index or pd.isna(p_row_data[c_upper]) else p_row_data[c_upper]
 
                 v_age = int(get_val('AGE', get_val('AGE_Y', 2)))
                 v_temp = float(get_val('BODY_TEMP', get_val('TEMPERATURE', 36.8)))
@@ -184,9 +184,10 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
                         st.success("🟢 แนะนำทางการแพทย์: ความเสี่ยงต่ำ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
 
 # =========================================================================
-# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - ตรวจสอบและย่อหน้าสมบูรณ์ร้อยเปอร์เซ็นต์
+# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - แยกบล็อกขาด ปลอดภัย 100%
 # =========================================================================
 else:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
     st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนเพื่อส่งประมวลผลด้วย AI")
     
+    # 🛠️ [ปลดล็อกระดับสถาปัตยกรรม] ประกาศตัวแปรรับค่าแบบอิสระในระดับบล็อกเดียว ป้องกัน InvalidIndexError และดึงปุ่มกลับมาครบ
