@@ -24,7 +24,7 @@ def load_ai_resources():
 
 model, scaler = load_ai_resources()
 
-# 🛠 ... แผงตั้งค่าการเชื่อมต่อฐานข้อมูลสำหรับ IT (Sidebar Configuration) คล้ายโปรแกรมสำเร็จรูปทั่วไป
+# 🛠️ แผงตั้งค่าการเชื่อมต่อฐานข้อมูลสำหรับ IT (Sidebar Configuration) คล้ายโปรแกรมสำเร็จรูปทั่วไป
 st.sidebar.header("⚙️ ตั้งค่าการเชื่อมต่อฐานข้อมูล รพ.")
 st.sidebar.caption("for IT Connect to HOSxP Backup Database")
 db_host = st.sidebar.text_input("IP Address ของเซิร์ฟเวอร์ฐานข้อมูล:", value="")
@@ -176,7 +176,7 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
                             if auto_risk == "high":
                                 st.error("🚨 แนะนำทางการแพทย์: ความเสี่ยงสูง (แนะนำตรวจ Rapid Influenza Test)")
                             elif auto_risk == "moderate":
-                                st.warning("⚠️ ข้อแนะนำสนับสนุนการตัดสินใจ: 🟡 ความเสี่ยงปานกลาง (ควรติดตามเฝ้าระวังอาการอย่างใกล้ชิดหรือควรพิจารณาเจาะเลือดซ้ำหากอาการไม่ดีขึ้น)")
+                                st.warning("⚠️ ข้อแนะนำสนับสนุนการตัดสินใจ: 🟡 ความเสี่ยงปานกลาง (ควรติดตามเฝ้าระวังอาการอย่างใกล้ชิดหรือควรพิจาะเลือกเจาะเลือดซ้ำหากอาการไม่ดีขึ้น)")
                             else:
                                 st.success("🟢 แนะนำทางการแพทย์: ความเสี่ยงต่ำ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
 
@@ -186,5 +186,3 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
             tp, fp, fn, tn = 0, 0, 0, 0
             for idx in range(len(df_patients)):
                 lab_status = str(df_patients.at[idx, 'INFLU_TEST']).strip().lower()
-                wbc_val = float(df_patients.at[idx, 'WBC']) if 'WBC' in df_patients.columns else 6000.0
-
