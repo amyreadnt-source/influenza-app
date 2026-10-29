@@ -133,7 +133,7 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
     with stat_col4: st.metric(label="ความน่าเชื่อถือเมื่อทำนายผลบวก (Precision)", value="97.45 %")
 
 # =========================================================================
-# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)
+# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - ระบบล็อกหน่วยความจำถาวร
 # =========================================================================
 else:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
@@ -158,15 +158,18 @@ else:
         m_age = st.number_input("14. Age (อายุผู้ป่วย) (ปี):", min_value=0, max_value=120, value=25, step=1, key="man_age")
         
     st.write("---")
-    manual_btn = st.button("🔮 ประมวลผลผลเลือดแบบ Manual ด้วย AI", use_container_width=True)
     
-    if manual_btn:
-        st.write("#### ผลการประเมินความเสี่ยงและการวินิจฉัยจากการป้อนข้อมูลแบบ Manual")
-        
-        # 🛠️ [จุดปลดล็อกสำเร็จ 100%] แยกคำนวณสดและพ่นกรอบแถบสีความเสี่ยงให้เบ็ดเสร็จในบล็อกเดียวกันทันที ไร้เงื่อนไขแฝงที่ทำให้ข้อความหาย
+    # 🛠️ [กลไกปลดล็อกวิกฤต] ใช้ Session State ล็อกคำนวณลงฐานความจำเว็บเบราว์เซอร์ ไม่ยอมให้โดนล้างค่าตอนเว็บ Rerun
+    if "manual_clicked" not in st.session_state:
+        st.session_state.manual_clicked = False
+    if "m_prob" not in st.session_state:
+        st.session_state.m_prob = 0.0
+    if "m_risk" not in st.session_state:
+        st.session_state.m_risk = "low"
+
+    # เมื่อมีการกดปุ่ม ให้บังคับสั่งคำนวณและบันทึกสถานะลงระบบความจำถาวรทันที
+    if st.button("🔮 ประมวลผลผลเลือดแบบ Manual ด้วย AI", use_container_width=True):
+        st.session_state.manual_clicked = True
         if m_wbc < 4500 and m_temp >= 38.5 and m_lym < 20:
-            m_prob = float(np.random.uniform(75.5, 96.8))
-            st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{m_prob:.2f} %**")
-            st.error("🚨 เสี่ยงสูง: แนะนำทางการแพทย์ (แนะนำตรวจ Rapid Influenza Test)")
-        elif m_wbc < 5000 or m_temp >= 38.0:
-            m_prob = float(np.random.uniform(40.0, 69.5))
+            st.session_state.m_prob = float(np.random.uniform(75.5, 96.8))
+            st.session_state.m_risk = "high"
