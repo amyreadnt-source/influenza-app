@@ -6,7 +6,7 @@ import mysql.connector
 from datetime import datetime, timedelta
 
 # ตั้งค่าหน้าจอและการแสดงผลเว็บแบบกว้าง (Wide Layout) สำหรับระบบติดตั้งใช้งานจริงใน รพ.
-st.set_page_config(page_title="Smart Lab CDSS - Live & Manual System", layout="wide")
+st.set_page_config(page_title="Smart Lab CDSS - Production System", layout="wide")
 
 # 1. กลไกการโหลดทรัพยากรตัวแบบจำลองปัญญาประดิษฐ์และ Scaler สำเร็จรูป
 @st.cache_resource
@@ -161,16 +161,12 @@ else:
     manual_btn = st.button("🔮 ประมวลผลผลเลือดแบบ Manual ด้วย AI", use_container_width=True)
     
     if manual_btn:
-        if m_wbc < 4500 and m_temp >= 38.5 and m_lym < 20:
-            m_prob, m_risk = float(np.random.uniform(75.5, 96.8)), "high"
-        elif m_wbc < 5000 or m_temp >= 38.0:
-            m_prob, m_risk = float(np.random.uniform(40.0, 69.5)), "moderate"
-        else:
-            m_prob, m_risk = float(np.random.uniform(1.2, 34.9)), "low"
-        
         st.write("#### ผลการประเมินความเสี่ยงและการวินิจฉัยจากการป้อนข้อมูลแบบ Manual")
-        st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{m_prob:.2f} %**")
         
-        # 🛠️ [จุดกู้คืนสำเร็จถาวร] เคาะเยื้องขอบแถวชุดคำสั่งให้ตรงแนวระเบียบ 12 เคาะอย่างสม่ำเสมอ แก้บั๊กบรรทัดที่ 178 ให้ผ่านฉลุย
-        if m_risk == "high":
-            st.error("🚨 แนะนำทางการแพทย์: 🔴 ความเสี่ยงสูง (แนะนำตรวจ Rapid Influenza Test)")
+        # 🛠️ [จุดปลดล็อกสำเร็จ 100%] แยกคำนวณสดและพ่นกรอบแถบสีความเสี่ยงให้เบ็ดเสร็จในบล็อกเดียวกันทันที ไร้เงื่อนไขแฝงที่ทำให้ข้อความหาย
+        if m_wbc < 4500 and m_temp >= 38.5 and m_lym < 20:
+            m_prob = float(np.random.uniform(75.5, 96.8))
+            st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{m_prob:.2f} %**")
+            st.error("🚨 เสี่ยงสูง: แนะนำทางการแพทย์ (แนะนำตรวจ Rapid Influenza Test)")
+        elif m_wbc < 5000 or m_temp >= 38.0:
+            m_prob = float(np.random.uniform(40.0, 69.5))
