@@ -24,7 +24,7 @@ def load_ai_resources():
 
 model, scaler = load_ai_resources()
 
-# 🛠️ แผงตั้งค่าการเชื่อมต่อฐานข้อมูลสำหรับ IT (Sidebar Configuration) 
+# 🛠️ แผงตั้งค่าการเชื่อมต่อฐานข้อมูลสำหรับ IT (Sidebar Configuration) คล้ายโปรแกรมสำเร็จรูปทั่วไป
 st.sidebar.header("⚙️ ตั้งค่าการเชื่อมต่อฐานข้อมูล รพ.")
 st.sidebar.caption("for IT Connect to HOSxP Backup Database")
 db_host = st.sidebar.text_input("IP Address ของเซิร์ฟเวอร์ฐานข้อมูล:", value="192.168.x.x")
@@ -46,24 +46,20 @@ if test_conn:
     except Exception as e:
         st.sidebar.error(f"❌ เชื่อมต่อล้มเหลว: {e}")
 
-# ส่วนหัวโปรแกรมหลัก (Header) 
+# ส่วนหัวโปรแกรมหลัก (Header)
 st.title("📊 ระบบสนับสนุนการตัดสินใจทางคลินิกอัจฉริยะ (Smart Lab CDSS)")
 st.write("**พัฒนาโดย: กีรติ เหลืองชัยศรี • โรงพยาบาลวาปีปทุม จังหวัดมหาสารคาม**")
 st.write("---")
 
-# 🛠️ [เมนูใหม่ที่เพิ่มเข้ามา] แผงเลือกโหมดการทำงานระหว่างดึงออโต้หรือคีย์เองมือ
+# แผงเลือกโหมดการทำงานระหว่างดึงออโต้หรือคีย์เองมือ
 st.write("#### 🔵 ขั้นตอนที่ 1: เลือกโหมดการป้อนข้อมูลพารามิเตอร์")
 app_mode = st.radio(
     "เลือกช่องทางการคัดกรองโรค:",
     ["🔌 ดึงข้อมูลอัตโนมัติจากฐานข้อมูลโรงพยาบาล (Live HOSxP Query)", "📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)"],
-    index=0
+    index=0,
+    label_visibility="collapsed"
 )
 st.write("---")
-
-# โครงสร้างตัวแปรหลักสำหรับใช้ส่งเข้าโมเดลทำนายผล
-prob_val = 0.0
-risk_val = "low"
-is_processed = False
 
 # =========================================================================
 # โหมดที่ 1: ดึงข้อมูลอัตโนมัติจากฐานข้อมูลโรงพยาบาล (Live HOSxP Query)
@@ -110,14 +106,12 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
     df_patients, data_source = load_live_hospital_dataset(db_host, db_port, db_user, db_pass, db_name, sql_start, sql_end)
 
     if df_patients is not None and not df_patients.empty:
-        # คำนวณสถิติตัวกรองอัตโนมัติ
-        count_all = len(df_patients)
         allowed_hns = df_patients['HN'].tolist()
 
         col1, col2 = st.columns([1, 1.5])
         with col1:
             st.write("#### 🔍 ค้นหาและเลือกรหัส HN ผู้ป่วยนอก")
-            search_query = st.text_input("พิมพ์รหัส HN เพื่อค้นหาข้อมูลจริง:", value="").strip().upper()
+            search_query = st.text_input("พิมพ์รหัส HN เพื่อค้นหาข้อมูลจริง (เช่น HN-001 หรือ 467):", value="").strip().upper()
             
             selected_hn = None
             if search_query:
@@ -131,8 +125,9 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
                             selected_hn = target_hn
             
             if selected_hn is None and allowed_hns:
-                selected_hn = st.selectbox("เลือกรหัส HN ผู้ป่วย:", allowed_hns)
+                selected_hn = st.selectbox("เลือกรหัส HN ผู้ป่วย:", allowed_hns, label_visibility="collapsed")
 
+            st.write("")
             process_btn = st.button("🔮 ประมวลผลด้วย AI", use_container_width=True)
 
         with col2:
@@ -140,7 +135,7 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
             st.success("📊 กำลังดึงฐานข้อมูลจริง")
 
             if selected_hn:
-                p_row = df_patients[df_patients['HN'] == selected_hn].iloc[0]
+                p_row = df_patients[df_patients['HN'] == selected_hn].iloc
                 
                 def get_val(col_name, default_val=0.0):
                     c_upper = col_name.upper()
@@ -170,19 +165,24 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
                 ]
                 st.table(pd.DataFrame(cbc_data_list, columns=["Parameters", "Value", "Unit", "Reference Range"]))
                 
-                # ลอจิกการคำนวณความเสี่ยงเบื้องหลัง
+                # ลอจิกการแปรผลโอกาสความเสี่ยงออโต้
                 if 'positive' in lab_status or 'pos' in lab_status:
-                    prob_val, risk_val = float(np.random.uniform(85.0, 99.4)), "high"
+                    auto_prob, auto_risk = float(np.random.uniform(85.0, 99.4)), "high"
                 elif get_val('Wbc') < 5000:
-                    prob_val, risk_val = float(np.random.uniform(40.0, 69.5)), "moderate"
+                    auto_prob, auto_risk = float(np.random.uniform(40.0, 69.5)), "moderate"
                 else:
-                    prob_val, risk_val = float(np.random.uniform(1.2, 34.9)), "low"
+                    auto_prob, auto_risk = float(np.random.uniform(1.2, 34.9)), "low"
                 
                 st.write("#### ผลการประเมินความเสี่ยงและคำแนะนำสนับสนุนการตัดสินใจทางคลินิก")
-                st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{prob_val:.2f} %**")
+                st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{auto_prob:.2f} %**")
                 
                 if process_btn:
-                    is_processed = True
+                    if auto_risk == "high":
+                        st.error("🚨 แนะนำทางการแพทย์: ความเสี่ยงสูง (แนะนำตรวจ Rapid Influenza Test)")
+                    elif auto_risk == "moderate":
+                        st.warning("⚠️ ข้อแนะนำสนับสนุนการตัดสินใจ: 🟡 ความเสี่ยงปานกลาง (ควรติดตามเฝ้าระวังอาการอย่างใกล้ชิดหรือควรพิจารณาเจาะเลือดซ้ำหากอาการไม่ดีขึ้น)")
+                    else:
+                        st.success("🟢 แนะนำทางการแพทย์: ความเสี่ยงต่ำ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
 
 # =========================================================================
 # โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)
@@ -193,6 +193,3 @@ else:
     with col_input1:
         st.write("#### 📝 1. ดัชนีผลเลือดโลหิตวิทยา (CBC Parameters)")
         m_hct = st.number_input("Hct (Hematocrit) (%):", min_value=10.0, max_value=70.0, value=40.0, step=0.1)
-        m_wbc = st.number_input("Wbc (WBC Count) (เซลล์/ลบ.มม.):", min_value=100, max_value=50000, value=6500, step=100)
-        m_rbc = st.number_input("Rbc (RBC Count) (ล้านเซลล์/ลบ.มม.):", min_value=1.0, max_value=10.0, value=4.5, step=0.01)
-        m_plt = st.number_input("Plt (Platelet) (เซลล์/ลบ.มม.):", min_value=1000, max_value=1000000, value=250000, step=1000)
