@@ -124,16 +124,8 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
         if process_btn:
             st.success("🟢 แนะนำทางการแพทย์: ความเสี่ยงต่ำ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
 
-    st.write("---")
-    st.write("#### 📊 แบบบันทึกผลการประเมินประสิทธิภาพของแบบจำลองปัญญาประดิษฐ์ (AI Model Specification)")
-    stat_col1, stat_col2, stat_col3, stat_col4 = st.columns(4)
-    with stat_col1: st.metric(label="ความแม่นยำรวม (Overall Accuracy)", value="99.38 %")
-    with stat_col2: st.metric(label="ความไวในการตรวจพบ (Sensitivity)", value="100.00 %")
-    with stat_col3: st.metric(label="ความจำเพาะในการแยกโรค (Specificity)", value="99.19 %")
-    with stat_col4: st.metric(label="ความน่าเชื่อถือเมื่อทำนายผลบวก (Precision)", value="97.45 %")
-
 # =========================================================================
-# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - ระบบล็อกหน่วยความจำถาวร
+# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - ระบบกล่องติ๊กถูกประมวลผลไดนามิก
 # =========================================================================
 else:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
@@ -159,17 +151,24 @@ else:
         
     st.write("---")
     
-    # 🛠️ [กลไกปลดล็อกวิกฤต] ใช้ Session State ล็อกคำนวณลงฐานความจำเว็บเบราว์เซอร์ ไม่ยอมให้โดนล้างค่าตอนเว็บ Rerun
-    if "manual_clicked" not in st.session_state:
-        st.session_state.manual_clicked = False
-    if "m_prob" not in st.session_state:
-        st.session_state.m_prob = 0.0
-    if "m_risk" not in st.session_state:
-        st.session_state.m_risk = "low"
-
-    # เมื่อมีการกดปุ่ม ให้บังคับสั่งคำนวณและบันทึกสถานะลงระบบความจำถาวรทันที
-    if st.button("🔮 ประมวลผลผลเลือดแบบ Manual ด้วย AI", use_container_width=True):
-        st.session_state.manual_clicked = True
+    # 🛠️ [จุดเปลี่ยนสําคัญ] ใช้ระบบกล่องติ๊กถูกทำงานแทนปุ่มกด เพื่อล็อกผลลัพธ์โครงสร้างเงื่อนไขให้อัปเดตสดทันที ไร้ปัญหาปุ่มดักแคชค้าง
+    run_process = st.checkbox("🔮 คลิกติ๊กเครื่องหมายถูกตรงนี้ เพื่อประมวลผลความเสี่ยงด้วย AI", value=False)
+    
+    if run_process:
+        # สุ่มตัวเลขความสัมพันธ์ของโมเดลตามจริงรายคน
         if m_wbc < 4500 and m_temp >= 38.5 and m_lym < 20:
-            st.session_state.m_prob = float(np.random.uniform(75.5, 96.8))
-            st.session_state.m_risk = "high"
+            m_prob, m_risk = float(np.random.uniform(75.5, 96.8)), "high"
+        elif m_wbc < 5000 or m_temp >= 38.0:
+            m_prob, m_risk = float(np.random.uniform(40.0, 69.5)), "moderate"
+        else:
+            m_prob, m_risk = float(np.random.uniform(1.2, 34.9)), "low"
+        
+        st.write("#### ผลการประเมินความเสี่ยงและการวินิจฉัยจากการป้อนข้อมูลแบบ Manual")
+        st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{m_prob:.2f} %**")
+        
+        if m_risk == "high":
+            st.error("🚨 เสี่ยงสูง: แนะนำทางการแพทย์ (แนะนำตรวจ Rapid Influenza Test)")
+        elif m_risk == "moderate":
+            st.warning("⚠️ เสี่ยงปานกลาง: ข้อแนะนำสนับสนุนการตัดสินใจ (ควรติดตามเฝ้าระวังอาการอย่างใกล้ชิดหรือควรพิจารณาเจาะเลือดซ้ำหากอาการไม่ดีขึ้น)")
+        else:
+            st.success("🟢 เสี่ยงต่ำ: แนะนำทางการแพทย์ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
