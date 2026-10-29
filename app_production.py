@@ -125,7 +125,7 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
                             selected_hn = target_hn
             
             if selected_hn is None and allowed_hns:
-                selected_hn = st.selectbox("เลือกรหัส HN ผู้ป่วย:", allowed_hns, label_visibility="collapsed")
+                selected_hn = st.selectbox("เลือกรหัส HN ผู้ป่วย:", allowed_hns)
 
             st.write("")
             process_btn = st.button("🔮 ประมวลผลด้วย AI", use_container_width=True)
@@ -135,7 +135,7 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
             st.success("📊 กำลังดึงฐานข้อมูลจริง")
 
             if selected_hn:
-                p_row = df_patients[df_patients['HN'] == selected_hn].iloc
+                p_row = df_patients[df_patients['HN'] == selected_hn].iloc[0]
                 
                 def get_val(col_name, default_val=0.0):
                     c_upper = col_name.upper()
@@ -165,7 +165,6 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
                 ]
                 st.table(pd.DataFrame(cbc_data_list, columns=["Parameters", "Value", "Unit", "Reference Range"]))
                 
-                # ลอจิกการแปรผลโอกาสความเสี่ยงออโต้
                 if 'positive' in lab_status or 'pos' in lab_status:
                     auto_prob, auto_risk = float(np.random.uniform(85.0, 99.4)), "high"
                 elif get_val('Wbc') < 5000:
@@ -185,11 +184,11 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
                         st.success("🟢 แนะนำทางการแพทย์: ความเสี่ยงต่ำ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
 
 # =========================================================================
-# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)
+# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - แก้ไขแผงฝังสมบูรณ์
 # =========================================================================
 else:
     col_input1, col_input2 = st.columns(2)
     
     with col_input1:
         st.write("#### 📝 1. ดัชนีผลเลือดโลหิตวิทยา (CBC Parameters)")
-        m_hct = st.number_input("Hct (Hematocrit) (%):", min_value=10.0, max_value=70.0, value=40.0, step=0.1)
+        m_hct = st.number_input("Hct (Hematocrit) (%):", min_value=10.0, max_value=70.0, value=40.0, step=0.1, key="m_hct")
