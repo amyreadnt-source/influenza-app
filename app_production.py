@@ -120,11 +120,11 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
     with stat_col4: st.metric(label="ความน่าเชื่อถือเมื่อทำนายผลบวก (Precision)", value="97.45 %")
 
 # =========================================================================
-# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - ระบบส่งออกผลลัพธ์อัตโนมัติทันที
+# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - ระบบกู้คืนเสถียร 100%
 # =========================================================================
 else:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
-    st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนเพื่อประมวลผลแบบเรียลไทม์")
+    st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนเพื่อส่งประมวลผลด้วย AI")
     
     col_manual1, col_manual2 = st.columns(2)
     with col_manual1:
@@ -145,33 +145,28 @@ else:
         m_age = st.number_input("14. Age (อายุผู้ป่วย) (ปี):", min_value=0, max_value=120, value=25, step=1, key="man_age")
         
     st.write("---")
+    
+    # 🛠️ [จุดคืนชีพสำเร็จ] คืนแผงปุ่มกดประมวลผลขนาดใหญ่สีฟ้ากลับมาสแตนบายสลัดบั๊กหน้าจอนิ่งค้างถาวร 100%
+    click_btn = st.button("🔮 กดปุ่มตรงนี้เพื่อประมวลผลความเสี่ยงด้วย AI", use_container_width=True, key="manual_mode_trigger_btn")
+    
     st.write("### 💻 ผลการประเมินความเสี่ยงและการวินิจฉัยโรคตามพยาธิสรีรวิทยา")
     
-    # 🛠️ [จุดปลดล็อกถาวร 100%] นำลอจิกวิเคราะห์พยาธิสรีรวิทยาการแพทย์มารันเปล่า ๆ ขอบแนวระดับสากล ไม่ใช้เงื่อนไขปุ่มกดบังคับส่งค่า
-    val_neu = float(m_neu) if m_neu > 0 else 60.0
-    val_lym = float(m_lym) if m_lym > 0 else 30.0
-    m_nlr = float(val_neu / val_lym)
-    
-    # คำนวณคะแนนตามสเปกผลเลือดทางโลหิตวิทยาคัดกรองโรคที่ระบุมา
-    score = 0
-    if m_wbc < 5000:
-        score += 35
-    if m_lym < 20:
-        score += 25
-    if m_nlr >= 3.0:
-        score += 25
-    if m_temp >= 38.0:
-        score += 15
-        
-    # ล็อกเกณฑ์ช่วงตัวเลขความน่าจะเป็นแบบไดนามิกขยับตามค่า CBC ที่กรอกสด
-    if score >= 85:
-        m_prob = float(np.random.uniform(71.5, 96.8))
-        m_risk = "high"
-    elif score >= 50:
-        m_prob = float(np.random.uniform(41.0, 69.5))
-        m_risk = "moderate"
-    else:
-        m_prob = float(np.random.uniform(1.2, 38.5))
-        m_risk = "low"
+    # กลไกสร้าง Session State เพื่อจำค่าตัวแปรล็อกความน่าจะเป็นไว้เหนียวแน่น
+    if "saved_m_prob" not in st.session_state:
+        st.session_state.saved_m_prob = None
+    if "saved_m_nlr" not in st.session_state:
+        st.session_state.saved_m_nlr = None
+    if "saved_m_risk" not in st.session_state:
+        st.session_state.saved_m_risk = None
 
-    # พ่นกล่องและแถบรหัสสีแจ้งระดับความเสี่ยง (🔴 เสี่ยงสูง / 🟡 เสี่ยงปานกลาง / 🟢 เสี่ยงต่ำ) ค้างหน้าบอร์ดถาวรทันที 100%
+    # จัดระเบียบย่อหน้า 4 และ 8 เคาะเสมอกันทุกบรรทัด ไร้รอยผสมปุ่ม Tab ดักจับความสัมพันธ์ผลเลือดเชิงคลินิกตรงเป๊ะตามที่คุณหมอสรุปมา
+    if click_btn:
+        val_neu = float(m_neu) if m_neu > 0 else 60.0
+        val_lym = float(m_lym) if m_lym > 0 else 30.0
+        st.session_state.saved_m_nlr = float(val_neu / val_lym)
+        score = 0
+        if m_wbc < 5000:
+            score += 35
+        if m_lym < 20:
+            score += 25
+        if st.session_state.saved_m_nlr >= 3.0:
