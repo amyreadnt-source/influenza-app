@@ -2,10 +2,9 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import mysql.connector
-from datetime import datetime, timedelta
 
 # ตั้งค่าหน้าจอและการแสดงผลเว็บแบบกว้าง (Wide Layout) อิงตามสเปกของโรงพยาบาลวาปีปทุม
-st.set_page_config(page_title="Smart Lab CDSS - Wapipathum", layout="wide")
+st.set_page_config(page_title="Smart Lab CDSS - Sandbox Testing", layout="wide")
 
 # =========================================================================
 # ⚙️ SIDEBAR: แผงตั้งค่าการเชื่อมต่อฐานข้อมูลสำหรับ IT
@@ -19,48 +18,62 @@ db_pass = st.sidebar.text_input("Database Password:", type="password", value="")
 st.sidebar.caption("ชื่อฐานข้อมูล (Database Name):")
 db_name = st.sidebar.text_input("Database Name:", value="hosxp", label_visibility="collapsed")
 
-# ตัวประกาศตัวแปรค่าสถิติเริ่มต้นเชิงระบาดวิทยาคลินิก
-acc_val, sens_val, spec_val, prec_val = "99.38 %", "100.00 %", "99.19 %", "97.45 %"
+# 🛠️ ปุ่มกดเชื่อมต่อฐานข้อมูลแยกส่วนชัดเจนเพื่อความปลอดภัยสูงสุดตามระเบียบคลินิก
+connect_db_click = st.sidebar.button("🔌 กดเชื่อมต่อฐานข้อมูลโรงพยาบาล (Live Connect)", use_container_width=True)
+
+# ประกาศตัวแปรรับค่าสถิติเริ่มต้น (ตั้งค่าเริ่มต้นเป็นตัวหนังสือรอข้อมูลจริง ไม่ Fix ตัวเลขหลอก)
+acc_text, sens_text, spec_text, prec_text = "รอการเชื่อมต่อฐานข้อมูลจริง...", "รอการเชื่อมต่อฐานข้อมูลจริง...", "รอการเชื่อมต่อฐานข้อมูลจริง...", "รอการเชื่อมต่อฐานข้อมูลจริง..."
 is_db_connected = False
 
-# ตรวจสอบสถานะการเชื่อมต่อและดึงสถิติวิเคราะห์สดจากฐานข้อมูลจริงจาก IT
-if db_host and db_user and db_pass and db_name:
-    try:
-        conn_test = mysql.connector.connect(
-            host=db_host, port=int(db_port), user=db_user, password=db_pass, database=db_name,
-            connect_timeout=2
-        )
-        st.sidebar.success("✅ เชื่อมต่อฐานข้อมูล HOSxP สำเร็จ!")
-        is_db_connected = True
-        
-        # กลไกคำนวณสด Confusion Matrix จากปริมาณข้อมูลจริงในเซิร์ฟเวอร์โรงพยาบาล
-        query_stats = "SELECT o.wbc, o.neu, o.lym, s.temperature AS body_temp, o.influ_test FROM lab_order_table o LEFT JOIN opdscreen s ON o.vn = s.vn WHERE o.influ_test IS NOT NULL"
-        df_stats = pd.read_sql(query_stats, conn_test)
-        conn_test.close()
-        
-        if not df_stats.empty:
-            df_stats.columns = df_stats.columns.astype(str).str.strip().str.upper()
-            tp, fp, tn, fn = 0, 0, 0, 0
-            for idx, row in df_stats.iterrows():
-                actual_pos = 'POS' in str(row['INFLU_TEST']).upper() or 'POSITIVE' in str(row['INFLU_TEST']).upper()
-                wbc = float(row['WBC']) if pd.notna(row['WBC']) else 6000
-                lym = float(row['LYM']) if pd.notna(row['LYM']) else 30
-                temp = float(row['BODY_TEMP']) if pd.notna(row['BODY_TEMP']) else 37.0
-                nlr = float(row['NEU'] / row['LYM']) if (pd.notna(row['NEU']) and lym > 0) else 2.0
-                
-                ai_predict_pos = temp >= 38.0 and (wbc < 5000 or lym <= 26.6 or nlr >= 2.7)
-                
-                if actual_pos and ai_predict_pos: tp += 1
-                elif not actual_pos and ai_predict_pos: fp += 1
-                elif not actual_pos and not ai_predict_pos: tn += 1
-                elif actual_pos and not ai_predict_pos: fn += 1
+# =========================================================================
+# 📊 ENGINE: ตรวจจับการกดปุ่มเพื่อดึงพารามิเตอร์และคำนวณสดสถิติจากฐานข้อมูล HOSxP จริง
+# =========================================================================
+if connect_db_click:
+    if db_host and db_user and db_pass and db_name:
+        try:
+            conn_test = mysql.connector.connect(
+                host=db_host, port=int(db_port), user=db_user, password=db_pass, database=db_name,
+                connect_timeout=3
+            )
+            st.sidebar.success("✅ เชื่อมต่อฐานข้อมูล HOSxP สำเร็จ!")
+            is_db_connected = True
             
-            acc_val = f"{((tp + tn) / (tp + fp + tn + fn) * 100):.2f} %" if (tp + fp + tn + fn) > 0 else "100.00 %"
-            sens_val = f"{(tp / (tp + fn) * 100):.2f} %" if (tp + fn) > 0 else "100.00 %"
-            spec_val = f"{(tn / (tn + fp) * 100):.2f} %" if (tn + fp) > 0 else "100.00 %"
-            prec_val = f"{(tp / (tp + fp) * 100):.2f} %" if (tp + fp) > 0 else "100.00 %"
-    except:
-        st.sidebar.error("❌ เชื่อมต่อหลังบ้านล้มเหลว (ระบบสแตนบายรอสัญญาณสาย LAN)")
+            # ดึงข้อมูลประวัติเคสจริงทั้งหมดจากแล็บหลังบ้านโรงพยาบาลมาประมวลผลคำนวณ
+            query_stats = "SELECT o.wbc, o.neu, o.lym, s.temperature AS body_temp, o.influ_test FROM lab_order_table o LEFT JOIN opdscreen s ON o.vn = s.vn WHERE o.influ_test IS NOT NULL"
+            df_stats = pd.read_sql(query_stats, conn_test)
+            conn_test.close()
+            
+            if not df_stats.empty:
+                df_stats.columns = df_stats.columns.astype(str).str.strip().str.upper()
+                tp, fp, tn, fn = 0, 0, 0, 0
+                
+                # ลูปเช็คสมการ Confusion Matrix สดรายตัวคนไข้จริงจากเซิร์ฟเวอร์
+                for idx, row in df_stats.iterrows():
+                    actual_pos = 'POS' in str(row['INFLU_TEST']).upper() or 'POSITIVE' in str(row['INFLU_TEST']).upper()
+                    wbc = float(row['WBC']) if pd.notna(row['WBC']) else 6000
+                    lym = float(row['LYM']) if pd.notna(row['LYM']) else 30
+                    temp = float(row['BODY_TEMP']) if pd.notna(row['BODY_TEMP']) else 37.0
+                    nlr = float(row['NEU'] / row['LYM']) if (pd.notna(row['NEU']) and lym > 0) else 2.0
+                    
+                    # ลоจิกตัววินิจฉัยความไวสูงอิงตามพยาธิสรีรวิทยา
+                    ai_predict_pos = temp >= 38.0 and (wbc < 5000 or lym <= 26.6 or nlr >= 2.7)
+                    
+                    if actual_pos and ai_predict_pos: tp += 1
+                    elif not actual_pos and ai_predict_pos: fp += 1
+                    elif not actual_pos and not ai_predict_pos: tn += 1
+                    elif actual_pos and not ai_predict_pos: fn += 1
+                
+                # พ่นแปลงอัตราส่วนเปอร์เซ็นต์สดเรียลไทม์จากตัวแปรดิบจริง ไม่ฟิกค่า
+                acc_text = f"{((tp + tn) / (tp + fp + tn + fn) * 100):.2f} %" if (tp + fp + tn + fn) > 0 else "100.00 %"
+                sens_text = f"{(tp / (tp + fn) * 100):.2f} %" if (tp + fn) > 0 else "100.00 %"
+                spec_text = f"{(tn / (tn + fp) * 100):.2f} %" if (tn + fp) > 0 else "100.00 %"
+                prec_text = f"{(tp / (tp + fp) * 100):.2f} %" if (tp + fp) > 0 else "100.00 %"
+            else:
+                st.sidebar.warning("⚠️ ค้นพบฐานข้อมูลแต่ไม่มีประวัติข้อมูลแล็บพารามิเตอร์ตรวจโรค")
+        except Exception as e:
+            st.sidebar.error(f"❌ เชื่อมต่อล้มเหลวเนื่องจาก: {e}")
+    else:
+        st.sidebar.warning("⚠️ กรุณาระบุข้อมูล IP, Username และ Password หลังบ้านให้ครบถ้วนก่อนกดเชื่อมต่อ")
 
 # ส่วนหัวโปรแกรมหลัก (Header)
 st.title("📊 ระบบสนับสนุนการตัดสินใจทางคลินิกอัจฉริยะ (Smart Lab CDSS)")
@@ -87,17 +100,15 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
     with col_live1:
         live_hn = st.text_input("ระบุรหัส HN ของผู้ป่วยนอกจริง (เช่น HN-001):", value="HN-001").strip().upper()
         st.write("")
-        # 🛠️ [จุดแก้สำคัญที่สุด] ตั้งรหัสคีย์และตัวแปรปุ่มให้ตรงระเบียบเงื่อนไข สยบบั๊กปุ่มกดแล้วจางหายสิ้นซาก
-        process_btn = st.button("🔮 ดึงข้อมูลและประมวลผลด้วย AI", use_container_width=True, key="live_query_trigger_btn")
+        process_btn = st.button("🔮 ดึงข้อมูลแล็บและแปรผลด้วย AI", use_container_width=True, key="live_query_trigger_btn")
 
     with col_live2:
         st.write("##### 💻 หน้าจอแสดงผลสารสนเทศด่านหน้าและการพยากรณ์โรค")
         
-        # ประกาศพารามิเตอร์เริ่มต้นกรณีที่ยังไม่ได้รันคีย์แล็บบนฐานข้อมูลจริง
         v_hct, v_wbc, v_rbc, v_plt, v_mcv, v_mch, v_mchc, v_neu, v_eo, v_lym, v_baso, v_mono, v_temp, v_age = 42.0, 4100, 4.50, 210000, 85.0, 28.2, 31.9, 76.0, 2.0, 14.0, 1.0, 5.0, 38.5, 25
         
         if process_btn:
-            if is_db_connected:
+            if is_db_connected and db_host:
                 try:
                     conn = mysql.connector.connect(host=db_host, port=int(db_port), user=db_user, password=db_pass, database=db_name)
                     query_patient = f"SELECT o.hct, o.wbc, o.rbc, o.plt, o.mcv, o.mch, o.mchc, o.neu, o.eo, o.lym, o.baso, o.mono, s.temperature AS body_temp, s.age_y AS age FROM lab_order_table o LEFT JOIN opdscreen s ON o.vn = s.vn WHERE o.hn = '{live_hn}' ORDER BY o.lab_order_number DESC LIMIT 1"
@@ -113,11 +124,9 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
                 except:
                     pass
             else:
-                st.warning("⚠️ โหมด Standby (ยังไม่ได้ต่อ LAN): แสดงผลสารสนเทศจำลองพารามิเตอร์ของระบบ")
+                st.warning("⚠️ โหมด Standby (LAN ยังไม่ได้เชื่อมต่อ): แสดงพารามิเตอร์ตรวจสอบโครงสร้างหน้าจอคอมพิวเตอร์")
 
-        st.write(f"**รหัสประจำตัวผู้ป่วยนอก (HN):** `{live_hn}` | **อายุ:** {int(v_age)} ปี | **อุณหภูมิแรกรับ:** {v_temp} °C")
-        
-        # 🛠️ [ปลดล็อกถาวร 100%] บังคับตารางผลแล็บ 14 ตัวแปรค้างหน้าแดชบอร์ด ไม่เลือนหายหลังเซฟ
+        # ตารางพารามิเตอร์ตรึงค้างหน้าแดชบอร์ดอย่างถาวร 100% ไร้รอยดีดหาย
         live_cbc_df = pd.DataFrame({
             'Parameters': ['Hct (Hematocrit)', 'Wbc (WBC Count)', 'Rbc (RBC Count)', 'Plt (Platelet)', 'MCV', 'MCH', 'MCHC', 'Neu (Neutrophil)', 'Eo (Eosinophil)', 'Lym (Lymphocyte)', 'Baso (Basophil)', 'Mono (Monocyte)', 'body_temp (อุณหภูมิร่างกาย)', 'Age (อายุ)'],
             'Value': [str(v_hct), str(v_wbc), str(v_rbc), str(v_plt), str(v_mcv), str(v_mch), str(v_mchc), str(v_neu), str(v_eo), str(v_lym), str(v_baso), str(v_mono), str(v_temp), str(v_age)],
@@ -126,7 +135,6 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
         })
         st.table(live_cbc_df)
         
-        # กลไกพยากรณ์โรคอิงพยาธิสรีรวิทยาความไวสูง
         v_nlr = float(float(v_neu) / float(v_lym)) if float(v_lym) > 0 else 2.0
         if float(v_temp) >= 38.0 and (float(v_wbc) < 5000 or float(v_lym) <= 26.6 or v_nlr >= 2.7):
             prob, risk = float(np.random.uniform(85.0, 97.5)), "high"
@@ -139,18 +147,10 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
         if risk == "high":
             st.error("🚨 แนะนำทางการแพทย์: 🔴 ความเสี่ยงสูง (จำนวน WBC ลดต่ำ ร่วมกับภาวะ Lymphopenia และค่า NLR สูง ตรงตามพยาธิสรีรวิทยาการติดเชื้อไวรัสไข้หวัดใหญ่ตัวจริง แนะนำส่งตรวจ Rapid Influenza Test ทันที)")
         else:
-            st.success("🟢 แนะนำทางการแพทย์: 🟢 ความเสี่ยงต่ำ (พารามิเตอร์ CBC และอัตราส่วน NLR อยู่ในเกณฑ์ปกติสากล)")
+            st.success("🟢 แนะนำทางการแพทย์: 🟢 ความเสี่ยงต่ำ (พารามิเตอร์ CBC และอัตราส่วน NLR อยู่ในเกณฑ์ปกติของประชากรทั่วไป)")
 
 # =========================================================================
 # โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกใหม่เอง (Manual CBC Input)
 # =========================================================================
 else:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
-    st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนเพื่อส่งประมวลผล")
-    
-    col_manual1, col_manual2 = st.columns(2)
-    with col_manual1:
-        m_hct = st.number_input("1. Hct (Hematocrit) (%):", min_value=10.0, max_value=70.0, value=40.0, step=0.1, key="man_hct")
-        m_wbc = st.number_input("2. Wbc (WBC Count) (เซลล์/ลบ.มม.):", min_value=100, max_value=50000, value=4200, step=100, key="man_wbc")
-        m_rbc = st.number_input("3. Rbc (RBC Count) (ล้านเซลล์/ลบ.มม.):", min_value=1.0, max_value=10.0, value=4.5, step=0.01, key="man_rbc")
-        m_plt = st.number_input("4. Plt (Platelet) (เซลล์/ลบ.มม.):", min_value=1000, max_value=1000000, value=250000, step=1000, key="man_plt")
