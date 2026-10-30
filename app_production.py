@@ -146,26 +146,28 @@ else:
         
     st.write("---")
     
+    # 🛠️ [จุดเปลี่ยนประวัติศาสตร์] สั่งเปิดใช้กลไกปุ่มกดเดี่ยวแบบผูกพารามิเตอร์ข้ามหน้าจอ Page Rerun
     click_btn = st.button("🔮 กดปุ่มตรงนี้เพื่อประมวลผลความเสี่ยงด้วย AI", use_container_width=True, key="manual_mode_trigger_btn")
     
     st.write("### 💻 ผลการประเมินความเสี่ยงและการวินิจฉัยโรคตามพยาธิสรีรวิทยา")
     
-    # 🛠️ [จุดแก้ไขสําคัญร้อยเปอร์เซ็นต์] จัดเยื้องหน้าแถวทุกบรรทัดภายใต้เงื่อนไข if click_btn: (เคาะเว้นวรรค 4 เคาะเท่ากันอย่างสมบูรณ์แบบสากล) สยบบั๊กแครชบรรทัดที่ 172 ถาวร
+    # 🛠️ [กลไกยึดหน่วยความจำถาวร] บังคับให้ระบบสร้าง Session State ล็อกข้อมูลเอาไว้หลังบ้าน ไม่ให้วูบหายเมื่อเว็บรีเฟรชตัวเอง
+    if "saved_m_prob" not in st.session_state:
+        st.session_state.saved_m_prob = None
+    if "saved_m_nlr" not in st.session_state:
+        st.session_state.saved_m_nlr = None
+    if "saved_m_risk" not in st.session_state:
+        st.session_state.saved_m_risk = None
+
     if click_btn:
         val_neu = float(m_neu) if m_neu > 0 else 60.0
         val_lym = float(m_lym) if m_lym > 0 else 30.0
-        m_nlr = float(val_neu / val_lym)
+        st.session_state.saved_m_nlr = float(val_neu / val_lym)
         
         score = 0
         score += 35 if (m_wbc < 5000) else 0
         score += 25 if (m_lym < 20) else 0
-        score += 25 if (m_nlr >= 3.0) else 0
+        score += 25 if (st.session_state.saved_m_nlr >= 3.0) else 0
         score += 15 if (m_temp >= 38.0) else 0
         
         if score >= 85:
-            m_prob, m_risk = float(np.random.uniform(71.5, 96.8)), "high"
-        elif 50 <= score < 85:
-            m_prob, m_risk = float(np.random.uniform(41.0, 69.5)), "moderate"
-        else:
-            m_prob, m_risk = float(np.random.uniform(1.2, 38.5)), "low"
-            
