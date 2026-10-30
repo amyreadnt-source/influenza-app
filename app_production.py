@@ -120,47 +120,42 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
     with stat_col4: st.metric(label="ความน่าเชื่อถือเมื่อทำนายผลบวก (Precision)", value="97.45 %")
 
 # =========================================================================
-# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - ระบบกู้คืนเสถียร 100%
+# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)
 # =========================================================================
 else:
-    st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
-    st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนเพื่อส่งประมวลผลด้วย AI")
-    
-    col_manual1, col_manual2 = st.columns(2)
-    with col_manual1:
-        m_hct = st.number_input("1. Hct (Hematocrit) (%):", min_value=10.0, max_value=70.0, value=40.0, step=0.1, key="man_hct")
-        m_wbc = st.number_input("2. Wbc (WBC Count) (เซลล์/ลบ.มม.):", min_value=100, max_value=50000, value=6500, step=100, key="man_wbc")
-        m_rbc = st.number_input("3. Rbc (RBC Count) (ล้านเซลล์/ลบ.มม.):", min_value=1.0, max_value=10.0, value=4.5, step=0.01, key="man_rbc")
-        m_plt = st.number_input("4. Plt (Platelet) (เซลล์/ลบ.มม.):", min_value=1000, max_value=1000000, value=250000, step=1000, key="man_plt")
-        m_mcv = st.number_input("5. MCV (fL):", min_value=50.0, max_value=150.0, value=85.0, step=0.1, key="man_mcv")
-        m_mch = st.number_input("6. MCH (pg):", min_value=15.0, max_value=50.0, value=28.0, step=0.1, key="man_mch")
-        m_mchc = st.number_input("7. MCHC (g/dL):", min_value=20.0, max_value=50.0, value=33.0, step=0.1, key="man_mchc")
-    with col_manual2:
-        m_neu = st.number_input("8. Neu (Neutrophil) (%):", min_value=0.0, max_value=100.0, value=60.0, step=1.0, key="man_neu")
-        m_eo = st.number_input("9. Eo (Eosinophil) (%):", min_value=0.0, max_value=100.0, value=2.0, step=1.0, key="man_eo")
-        m_lym = st.number_input("10. Lym (Lymphocyte) (%):", min_value=0.0, max_value=100.0, value=30.0, step=1.0, key="man_lym")
-        m_baso = st.number_input("11. Baso (Basophil) (%):", min_value=0.0, max_value=100.0, value=1.0, step=1.0, key="man_baso")
-        m_mono = st.number_input("12. Mono (Monocyte) (%):", min_value=0.0, max_value=100.0, value=7.0, step=1.0, key="man_mono")
-        m_temp = st.number_input("13. body_temp (อุณหภูมิร่างกายแรกรับ) (°C):", min_value=30.0, max_value=45.0, value=37.0, step=0.1, key="man_temp")
-        m_age = st.number_input("14. Age (อายุผู้ป่วย) (ปี):", min_value=0, max_value=120, value=25, step=1, key="man_age")
+    with st.form(key="manual_clinical_form"):
+        st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
+        st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนเพื่อส่งประมวลผลด้วย AI")
         
-    st.write("---")
-    
-    # 🛠️ [จุดคืนชีพสำเร็จ] คืนแผงปุ่มกดประมวลผลขนาดใหญ่สีฟ้ากลับมาสแตนบายสลัดบั๊กหน้าจอนิ่งค้างถาวร 100%
-    click_btn = st.button("🔮 กดปุ่มตรงนี้เพื่อประมวลผลความเสี่ยงด้วย AI", use_container_width=True, key="manual_mode_trigger_btn")
-    
+        col_manual1, col_manual2 = st.columns(2)
+        with col_manual1:
+            m_hct = st.number_input("1. Hct (Hematocrit) (%):", min_value=10.0, max_value=70.0, value=40.0, step=0.1, key="man_hct")
+            m_wbc = st.number_input("2. Wbc (WBC Count) (เซลล์/ลบ.มม.):", min_value=100, max_value=50000, value=6500, step=100, key="man_wbc")
+            m_rbc = st.number_input("3. Rbc (RBC Count) (ล้านเซลล์/ลบ.มม.):", min_value=1.0, max_value=10.0, value=4.5, step=0.01, key="man_rbc")
+            m_plt = st.number_input("4. Plt (Platelet) (เซลล์/ลบ.มม.):", min_value=1000, max_value=1000000, value=250000, step=1000, key="man_plt")
+            m_mcv = st.number_input("5. MCV (fL):", min_value=50.0, max_value=150.0, value=85.0, step=0.1, key="man_mcv")
+            m_mch = st.number_input("6. MCH (pg):", min_value=15.0, max_value=50.0, value=28.0, step=0.1, key="man_mch")
+            m_mchc = st.number_input("7. MCHC (g/dL):", min_value=20.0, max_value=50.0, value=33.0, step=0.1, key="man_mchc")
+        with col_manual2:
+            m_neu = st.number_input("8. Neu (Neutrophil) (%):", min_value=0.0, max_value=100.0, value=60.0, step=1.0, key="man_neu")
+            m_eo = st.number_input("9. Eo (Eosinophil) (%):", min_value=0.0, max_value=100.0, value=2.0, step=1.0, key="man_eo")
+            m_lym = st.number_input("10. Lym (Lymphocyte) (%):", min_value=0.0, max_value=100.0, value=30.0, step=1.0, key="man_lym")
+            m_baso = st.number_input("11. Baso (Basophil) (%):", min_value=0.0, max_value=100.0, value=1.0, step=1.0, key="man_baso")
+            m_mono = st.number_input("12. Mono (Monocyte) (%):", min_value=0.0, max_value=100.0, value=7.0, step=1.0, key="man_mono")
+            m_temp = st.number_input("13. body_temp (อุณหภูมิร่างกายแรกรับ) (°C):", min_value=30.0, max_value=45.0, value=37.0, step=0.1, key="man_temp")
+            m_age = st.number_input("14. Age (อายุผู้ป่วย) (ปี):", min_value=0, max_value=120, value=25, step=1, key="man_age")
+            
+        st.write("---")
+        submit_btn = st.form_submit_button("กดปุ่มตรงนี้เพื่อประมวลผลความเสี่ยงด้วย AI", use_container_width=True)
+
     st.write("### 💻 ผลการประเมินความเสี่ยงและการวินิจฉัยโรคตามพยาธิสรีรวิทยา")
     
-    # กลไกสร้าง Session State เพื่อจำค่าตัวแปรล็อกความน่าจะเป็นไว้เหนียวแน่น
-    if "saved_m_prob" not in st.session_state:
-        st.session_state.saved_m_prob = None
-    if "saved_m_nlr" not in st.session_state:
-        st.session_state.saved_m_nlr = None
-    if "saved_m_risk" not in st.session_state:
-        st.session_state.saved_m_risk = None
+    if "saved_m_prob" not in st.session_state: st.session_state.saved_m_prob = None
+    if "saved_m_nlr" not in st.session_state: st.session_state.saved_m_nlr = None
+    if "saved_m_risk" not in st.session_state: st.session_state.saved_m_risk = None
 
-    # จัดระเบียบย่อหน้า 4 และ 8 เคาะเสมอกันทุกบรรทัด ไร้รอยผสมปุ่ม Tab ดักจับความสัมพันธ์ผลเลือดเชิงคลินิกตรงเป๊ะตามที่คุณหมอสรุปมา
-    if click_btn:
+    # 🛠️ [จุดแก้ไขประวัติศาสตร์] ชำระการเคาะวรรคย่อหน้าใหม่ให้เรียบเนียนเสมอกันทุกช่วงคำสั่ง ยึดแนว 8 เคาะอย่างเคร่งครัด สลายบั๊กบรรทัด 172 ขาดลอย
+    if submit_btn:
         val_neu = float(m_neu) if m_neu > 0 else 60.0
         val_lym = float(m_lym) if m_lym > 0 else 30.0
         st.session_state.saved_m_nlr = float(val_neu / val_lym)
@@ -170,3 +165,7 @@ else:
         if m_lym < 20:
             score += 25
         if st.session_state.saved_m_nlr >= 3.0:
+            score += 25
+        if m_temp >= 38.0:
+            score += 15
+        if score >= 85:
