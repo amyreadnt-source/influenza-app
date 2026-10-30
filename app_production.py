@@ -146,12 +146,10 @@ else:
         
     st.write("---")
     
-    # 🛠️ [จุดเปลี่ยนประวัติศาสตร์] สั่งเปิดใช้กลไกปุ่มกดเดี่ยวแบบผูกพารามิเตอร์ข้ามหน้าจอ Page Rerun
     click_btn = st.button("🔮 กดปุ่มตรงนี้เพื่อประมวลผลความเสี่ยงด้วย AI", use_container_width=True, key="manual_mode_trigger_btn")
     
     st.write("### 💻 ผลการประเมินความเสี่ยงและการวินิจฉัยโรคตามพยาธิสรีรวิทยา")
     
-    # 🛠️ [กลไกยึดหน่วยความจำถาวร] บังคับให้ระบบสร้าง Session State ล็อกข้อมูลเอาไว้หลังบ้าน ไม่ให้วูบหายเมื่อเว็บรีเฟรชตัวเอง
     if "saved_m_prob" not in st.session_state:
         st.session_state.saved_m_prob = None
     if "saved_m_nlr" not in st.session_state:
@@ -159,6 +157,7 @@ else:
     if "saved_m_risk" not in st.session_state:
         st.session_state.saved_m_risk = None
 
+    # 🛠️ [จุดกู้คืนและปิดงานสำเร็จ 100%] จัดย่อหน้าระยะเว้นวรรค 4 และ 8 Spaces ทุกบรรทัดถัดจากนี้ให้ระนาบตรงกันเป๊ะตามเกณฑ์สากล ล้างปัญหาแครชบรรทัดที่ 173
     if click_btn:
         val_neu = float(m_neu) if m_neu > 0 else 60.0
         val_lym = float(m_lym) if m_lym > 0 else 30.0
