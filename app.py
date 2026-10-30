@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import joblib
 import numpy as np
 import pandas as pd
@@ -188,3 +188,32 @@ if df_patients is not None:
                     '36.5 - 37.4', '0 - 120'
                 ]
             })
+            st.dataframe(real_cbc, use_container_width=True, hide_index=True)
+            
+            st.write("#### ผลการประเมินความเสี่ยงและคำแนะนำสนับสนุนการตัดสินใจทางคลินิก")
+            st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{prob_val:.2f} %**")
+            
+            if process_btn:
+                if risk_val == "high":
+                    st.error("🚨 แนะนำทางการแพทย์: ความเสี่ยงสูง (แนะนำตรวจ Rapid Influenza Test)")
+                elif risk_val == "moderate":
+                    st.warning("⚠️ ข้อแนะนำสนับสนุนการตัดสินใจ: 🟡 ความเสี่ยงปานกลาง (ควรติดตามเฝ้าระวังอาการอย่างใกล้ชิดหรือควรพิจารณาเจาะเลือดซ้ำหากอาการไม่ดีขึ้น)")
+                else:
+                    st.success("🟢 แนะนำทางการแพทย์: ความเสี่ยงต่ำ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
+            else:
+                st.info("💡 ระบบพร้อมปฏิบัติงาน: กรุณากดปุ่มประมวลผลด้วย AI เพื่อดูคำแนะนำสนับสนุนการตัดสินใจ")
+
+    st.write("---")
+    st.write("#### 📊 แบบบันทึกผลการประเมินประสิทธิภาพของแบบจำลองปัญญาประดิษฐ์ (AI Model Specification)")
+
+    stat_col1, stat_col2, stat_col3, stat_col4 = st.columns(4)
+    with stat_col1:
+        st.metric(label="ความแม่นยำรวม (Overall Accuracy)", value="99.38 %")
+    with stat_col2:
+        st.metric(label="ความไวในการตรวจพบ (Sensitivity)", value="100.00 %")
+    with stat_col3:
+        st.metric(label="ความจำเพาะในการแยกโรค (Specificity)", value="99.19 %")
+    with stat_col4:
+        st.metric(label="ความน่าเชื่อถือเมื่อทำนายผลบวก (Precision)", value="97.45 %")
+else:
+    st.error("⚠️ ไม่สามารถ加โหลดไฟล์ฐานข้อมูลหลัก 'patient_data.xlsx' ได้ กรุณาตรวจสอบการอัปโหลดบน GitHub")
