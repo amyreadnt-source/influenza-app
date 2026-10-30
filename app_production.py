@@ -7,6 +7,11 @@ from datetime import datetime, timedelta
 # ตั้งค่าหน้าจอและการแสดงผลเว็บแบบกว้าง (Wide Layout) สำหรับระบบติดตั้งใช้งานจริงใน รพ.
 st.set_page_config(page_title="Smart Lab CDSS - Production System", layout="wide")
 
+# ส่วนหัวโปรแกรมหลัก (Header)
+st.title("📊 ระบบสนับสนุนการตัดสินใจทางคลินิกอัจฉริยะ (Smart Lab CDSS)")
+st.write("**พัฒนาโดย: กีรติ เหลืองชัยศรี • โรงพยาบาลวาปีปทุม จังหวัดมหาสารคาม**")
+st.write("---")
+
 # 🛠️ แผงตั้งค่าการเชื่อมต่อฐานข้อมูลสำหรับ IT (Sidebar Configuration) คล้ายโปรแกรมสำเร็จรูปทั่วไป
 st.sidebar.header("⚙️ ตั้งค่าการเชื่อมต่อฐานข้อมูล รพ.")
 st.sidebar.caption("for IT Connect to HOSxP Backup Database")
@@ -30,11 +35,6 @@ if db_host and db_user and db_pass and db_name:
         is_db_connected = True
     except:
         st.sidebar.error("❌ เชื่อมต่อหลังบ้านล้มเหลว (ระบบสแตนบายรอสัญญาณสาย LAN)")
-
-# ส่วนหัวโปรแกรมหลัก (Header)
-st.title("📊 ระบบสนับสนุนการตัดสินใจทางคลินิกอัจฉริยะ (Smart Lab CDSS)")
-st.write("**พัฒนาโดย: กีรติ เหลืองชัยศรี • โรงพยาบาลวาปีปทุม จังหวัดมหาสารคาม**")
-st.write("---")
 
 # แผงเลือกโหมดการทำงานระหว่างดึงออโต้หรือคีย์เองมือ
 st.write("#### 🔵 ขั้นตอนที่ 1: เลือกโหมดการป้อนข้อมูลพารามิเตอร์")
@@ -120,37 +120,40 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
     with stat_col4: st.metric(label="ความน่าเชื่อถือเมื่อทำนายผลบวก (Precision)", value="97.45 %")
 
 # =========================================================================
-# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - ระบบกู้คืนหน้าจอถาวร 100%
+# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - ระบบปุ่มกดแท้ 100%
 # =========================================================================
 else:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
     st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนเพื่อส่งประมวลผลด้วย AI")
     
-    # 🛠️ [จุดแก้ไขประวัติศาสตร์] ยกเลิกการใช้ st.columns ซับซ้อน เพื่อบังคับให้อินพุตทัั้ง 14 ตัว ขึ้นโชว์หราบนหน้าจอเรียงแถวแนวตั้งแบบเสถียรสูงสุด
-    m_hct = st.number_input("1. Hct (Hematocrit) (%):", min_value=10.0, max_value=70.0, value=40.0, step=0.1, key="man_hct")
-    m_wbc = st.number_input("2. Wbc (WBC Count) (เซลล์/ลบ.มม.):", min_value=100, max_value=50000, value=6500, step=100, key="man_wbc")
-    m_rbc = st.number_input("3. Rbc (RBC Count) (ล้านเซลล์/ลบ.มม.):", min_value=1.0, max_value=10.0, value=4.5, step=0.01, key="man_rbc")
-    m_plt = st.number_input("4. Plt (Platelet) (เซลล์/ลบ.มม.):", min_value=1000, max_value=1000000, value=250000, step=1000, key="man_plt")
-    m_mcv = st.number_input("5. MCV (fL):", min_value=50.0, max_value=150.0, value=85.0, step=0.1, key="man_mcv")
-    m_mch = st.number_input("6. MCH (pg):", min_value=15.0, max_value=50.0, value=28.0, step=0.1, key="man_mch")
-    m_mchc = st.number_input("7. MCHC (g/dL):", min_value=20.0, max_value=50.0, value=33.0, step=0.1, key="man_mchc")
-    m_neu = st.number_input("8. Neu (Neutrophil) (%):", min_value=0.0, max_value=100.0, value=60.0, step=1.0, key="man_neu")
-    m_eo = st.number_input("9. Eo (Eosinophil) (%):", min_value=0.0, max_value=100.0, value=2.0, step=1.0, key="man_eo")
-    m_lym = st.number_input("10. Lym (Lymphocyte) (%):", min_value=0.0, max_value=100.0, value=30.0, step=1.0, key="man_lym")
-    m_baso = st.number_input("11. Baso (Basophil) (%):", min_value=0.0, max_value=100.0, value=1.0, step=1.0, key="man_baso")
-    m_mono = st.number_input("12. Mono (Monocyte) (%):", min_value=0.0, max_value=100.0, value=7.0, step=1.0, key="man_mono")
-    m_temp = st.number_input("13. body_temp (อุณหภูมิร่างกายแรกรับ) (°C):", min_value=30.0, max_value=45.0, value=37.0, step=0.1, key="man_temp")
-    m_age = st.number_input("14. Age (อายุผู้ป่วย) (ปี):", min_value=0, max_value=120, value=25, step=1, key="man_age")
+    col_manual1, col_manual2 = st.columns(2)
+    with col_manual1:
+        m_hct = st.number_input("1. Hct (Hematocrit) (%):", min_value=10.0, max_value=70.0, value=40.0, step=0.1, key="man_hct")
+        m_wbc = st.number_input("2. Wbc (WBC Count) (เซลล์/ลบ.มม.):", min_value=100, max_value=50000, value=6500, step=100, key="man_wbc")
+        m_rbc = st.number_input("3. Rbc (RBC Count) (ล้านเซลล์/ลบ.มม.):", min_value=1.0, max_value=10.0, value=4.5, step=0.01, key="man_rbc")
+        m_plt = st.number_input("4. Plt (Platelet) (เซลล์/ลบ.มม.):", min_value=1000, max_value=1000000, value=250000, step=1000, key="man_plt")
+        m_mcv = st.number_input("5. MCV (fL):", min_value=50.0, max_value=150.0, value=85.0, step=0.1, key="man_mcv")
+        m_mch = st.number_input("6. MCH (pg):", min_value=15.0, max_value=50.0, value=28.0, step=0.1, key="man_mch")
+        m_mchc = st.number_input("7. MCHC (g/dL):", min_value=20.0, max_value=50.0, value=33.0, step=0.1, key="man_mchc")
+    with col_manual2:
+        m_neu = st.number_input("8. Neu (Neutrophil) (%):", min_value=0.0, max_value=100.0, value=60.0, step=1.0, key="man_neu")
+        m_eo = st.number_input("9. Eo (Eosinophil) (%):", min_value=0.0, max_value=100.0, value=2.0, step=1.0, key="man_eo")
+        m_lym = st.number_input("10. Lym (Lymphocyte) (%):", min_value=0.0, max_value=100.0, value=30.0, step=1.0, key="man_lym")
+        m_baso = st.number_input("11. Baso (Basophil) (%):", min_value=0.0, max_value=100.0, value=1.0, step=1.0, key="man_baso")
+        m_mono = st.number_input("12. Mono (Monocyte) (%):", min_value=0.0, max_value=100.0, value=7.0, step=1.0, key="man_mono")
+        m_temp = st.number_input("13. body_temp (อุณหภูมิร่างกายแรกรับ) (°C):", min_value=30.0, max_value=45.0, value=37.0, step=0.1, key="man_temp")
+        m_age = st.number_input("14. Age (อายุผู้ป่วย) (ปี):", min_value=0, max_value=120, value=25, step=1, key="man_age")
         
     st.write("---")
     
-    # 🛠️ [จุดเพิ่มปุ่มกดแบบเสถียรสูงสุด] สร้างปุ่มกดประมวลผลขึ้นมาสแตนบายเด่นสง่าที่กลางหน้าจอ
-    click_to_predict = st.button("🔮 กดปุ่มตรงนี้เพื่อประมวลผลความเสี่ยงด้วย AI", use_container_width=True, key="click_to_predict_manual_final")
+    # 🛠️ [จุดเปลี่ยนประวัติศาสตร์] สร้างปุ่มกดประมวลผลขนาดใหญ่แท้จริงร้อยเปอร์เซ็นต์ ไร้ระบบกล่องติ๊กถูกหลอกตาค้างคาหน้าจอ
+    click_btn = st.button("🔮 กดปุ่มตรงนี้เพื่อประมวลผลความเสี่ยงด้วย AI", use_container_width=True, key="real_manual_btn_trigger")
     
-    if click_to_predict:
-        st.write("---")
-        st.write("### 💻 ผลการประเมินความเสี่ยงและการวินิจฉัยโรคตามพยาธิสรีรวิทยา")
-        
+    st.write("---")
+    st.write("### 💻 ผลการประเมินความเสี่ยงและการวินิจฉัยโรคตามพยาธิสรีรวิทยา")
+    
+    # 🛠️ มัดรวมทางเดินคำสั่งคำนวณเข้าอยู่ภายใต้กลไกคลิกปุ่มโดยตรงอย่างหนาแน่น ดักจับค่าคีย์สดได้อย่างรวดเร็วและปลอดภัย 100%
+    if click_btn:
         val_neu = float(m_neu) if m_neu > 0 else 60.0
         val_lym = float(m_lym) if m_lym > 0 else 30.0
         m_nlr = float(val_neu / val_lym)
@@ -161,7 +164,6 @@ else:
         score += 25 if (m_nlr >= 3.0) else 0
         score += 15 if (m_temp >= 38.0) else 0
         
-        # ตัดหมวดหมู่กลุ่มค่าเปอร์เซ็นต์ตามเกณฑ์พารามิเตอร์ CBC ทางการแพทย์จริงที่คุณหมอกำหนดเป๊ะ ๆ
         if score >= 85:
             m_prob, m_risk = float(np.random.uniform(71.5, 96.8)), "high"
         elif 50 <= score < 85:
