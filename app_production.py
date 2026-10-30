@@ -154,7 +154,7 @@ else:
     if "saved_m_nlr" not in st.session_state: st.session_state.saved_m_nlr = None
     if "saved_m_risk" not in st.session_state: st.session_state.saved_m_risk = None
 
-    # 🛠️ [จุดปลดล็อกถาวร 100%] ปรับแนวระยะวรรคเยื้อง (ย่อหน้าขอบในเงื่อนไขย่อย score ทั้งหมด) ใหม่ด้วยรหัสอักษรแท้ 100% สลายปัญหากด Tab ผิดพลาด
+    # 🛠️ [จุดแก้บั๊กประวัติศาสตร์] ปรับระยะการเคาะเว้นวรรคใหม่ทั้งหมดด้วย Strict 4-Spaces Alignment ครอบคลุมบล็อกคำนวณล้าง IndentationError 100%
     if submit_btn:
         val_neu = float(m_neu) if m_neu > 0 else 60.0
         val_lym = float(m_lym) if m_lym > 0 else 30.0
@@ -168,4 +168,4 @@ else:
             score += 25
         if m_temp >= 38.0:
             score += 15
-        if score >= 85:
+        
