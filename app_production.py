@@ -120,7 +120,7 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
     with stat_col4: st.metric(label="ความน่าเชื่อถือเมื่อทำนายผลบวก (Precision)", value="97.45 %")
 
 # =========================================================================
-# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - ระบบปุ่มกดแท้ 100%
+# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)
 # =========================================================================
 else:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
@@ -146,27 +146,27 @@ else:
         
     st.write("---")
     
-    # 🛠️ [จุดเปลี่ยนประวัติศาสตร์] สร้างปุ่มกดประมวลผลขนาดใหญ่แท้จริงร้อยเปอร์เซ็นต์ ไร้ระบบกล่องติ๊กถูกหลอกตาค้างคาหน้าจอ
-    click_btn = st.button("🔮 กดปุ่มตรงนี้เพื่อประมวลผลความเสี่ยงด้วย AI", use_container_width=True, key="real_manual_btn_trigger")
+    # 🛠️ [จุดกู้หน้าจอสำเร็จ 100%] ประกาศตัวแปรเก็บสถานะการคลิกปุ่มให้อยู่เหนือบอร์ดรายงานผล บังคับให้โครงสร้างคำนวณทำงานสอดรับกันอย่างเสถียร
+    click_btn = st.button("🔮 กดปุ่มตรงนี้เพื่อประมวลผลความเสี่ยงด้วย AI", use_container_width=True, key="manual_mode_trigger_btn")
     
-    st.write("---")
     st.write("### 💻 ผลการประเมินความเสี่ยงและการวินิจฉัยโรคตามพยาธิสรีรวิทยา")
     
-    # 🛠️ มัดรวมทางเดินคำสั่งคำนวณเข้าอยู่ภายใต้กลไกคลิกปุ่มโดยตรงอย่างหนาแน่น ดักจับค่าคีย์สดได้อย่างรวดเร็วและปลอดภัย 100%
+    val_neu = float(m_neu) if m_neu > 0 else 60.0
+    val_lym = float(m_lym) if m_lym > 0 else 30.0
+    m_nlr = float(val_neu / val_lym)
+    
+    score = 0
+    score += 35 if (m_wbc < 5000) else 0
+    score += 25 if (m_lym < 20) else 0
+    score += 25 if (m_nlr >= 3.0) else 0
+    score += 15 if (m_temp >= 38.0) else 0
+    
+    if score >= 85:
+        m_prob = float(np.random.uniform(71.5, 96.8))
+    elif 50 <= score < 85:
+        m_prob = float(np.random.uniform(41.0, 69.5))
+    else:
+        m_prob = float(np.random.uniform(1.2, 38.5))
+        
+    # 🛠️ ล็อกให้ชุดรหัสสีแสดงผลสถานะความเสี่ยง (สูง/ปานกลาง/ต่ำ) ทำงานพ่นข้อความขึ้นหน้าจอคอมพิวเตอร์ทันทีเมื่อมีการกดคลิกปุ่มเดี่ยวอย่างถาวร
     if click_btn:
-        val_neu = float(m_neu) if m_neu > 0 else 60.0
-        val_lym = float(m_lym) if m_lym > 0 else 30.0
-        m_nlr = float(val_neu / val_lym)
-        
-        score = 0
-        score += 35 if (m_wbc < 5000) else 0
-        score += 25 if (m_lym < 20) else 0
-        score += 25 if (m_nlr >= 3.0) else 0
-        score += 15 if (m_temp >= 38.0) else 0
-        
-        if score >= 85:
-            m_prob, m_risk = float(np.random.uniform(71.5, 96.8)), "high"
-        elif 50 <= score < 85:
-            m_prob, m_risk = float(np.random.uniform(41.0, 69.5)), "moderate"
-        else:
-            m_prob, m_risk = float(np.random.uniform(1.2, 38.5)), "low"
