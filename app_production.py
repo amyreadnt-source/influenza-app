@@ -12,7 +12,7 @@ st.title("📊 ระบบสนับสนุนการตัดสิน�
 st.write("**พัฒนาโดย: กีรติ เหลืองชัยศรี • โรงพยาบาลวาปีปทุม จังหวัดมหาสารคาม**")
 st.write("---")
 
-# 🛠️ แผงตั้งค่าการเชื่อมต่อฐานข้อมูลสำหรับ IT (Sidebar Configuration)
+# 🛠️ แผงตั้งค่าการเชื่อมต่อฐานข้อมูลสำหรับ IT (Sidebar Configuration) คล้ายโปรแกรมสำเร็จรูปทั่วไป
 st.sidebar.header("⚙️ ตั้งค่าการเชื่อมต่อฐานข้อมูล รพ.")
 st.sidebar.caption("for IT Connect to HOSxP Backup Database")
 db_host = st.sidebar.text_input("IP Address ของเซิร์ฟเวอร์ฐานข้อมูล:", value="")
@@ -120,10 +120,9 @@ if "ดึงข้อมูลอัตโนมัติ" in app_mode:
     with stat_col4: st.metric(label="ความน่าเชื่อถือเมื่อทำนายผลบวก (Precision)", value="97.45 %")
 
 # =========================================================================
-# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - ระบบ Form ล็อกความจำ 100%
+# โหมดที่ 2: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)
 # =========================================================================
 else:
-    # 🛠️ [จุดแก้ระเบียบโครงสร้างหลัก] ใช้ st.form ครอบพารามิเตอร์ทั้งหมดเพื่อบังคับค่าอินพุตไม่ให้หลุดหายเมื่อกดปุ่ม
     with st.form(key="manual_clinical_form"):
         st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
         st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนเพื่อส่งประมวลผลด้วย AI")
@@ -147,7 +146,6 @@ else:
             m_age = st.number_input("14. Age (อายุผู้ป่วย) (ปี):", min_value=0, max_value=120, value=25, step=1, key="man_age")
             
         st.write("---")
-        # 🛠️ [จุดแก้ไขประวัติศาสตร์] พิมพ์ชื่อปุ่มตรงเป๊ะตามตัวหนังสือหน้าจอของคุณหมอ ไร้อิโมจิแปลกปลอม บั๊กปุ่มกดนิ่งเฉยอันตรธานหายไปทันทีครับ
         submit_btn = st.form_submit_button("กดปุ่มตรงนี้เพื่อประมวลผลความเสี่ยงด้วย AI", use_container_width=True)
 
     st.write("### 💻 ผลการประเมินความเสี่ยงและการวินิจฉัยโรคตามพยาธิสรีรวิทยา")
@@ -156,15 +154,18 @@ else:
     if "saved_m_nlr" not in st.session_state: st.session_state.saved_m_nlr = None
     if "saved_m_risk" not in st.session_state: st.session_state.saved_m_risk = None
 
+    # 🛠️ [จุดปลดล็อกถาวร 100%] แก้ไขระเบียบย่อหน้าช่วงประมวลผลคะแนนให้เสมอกันทุกบรรทัดอย่างสมบูรณ์แบบสากล ล้างปัญหาแครชบรรทัดที่ 170
     if submit_btn:
         val_neu = float(m_neu) if m_neu > 0 else 60.0
         val_lym = float(m_lym) if m_lym > 0 else 30.0
         st.session_state.saved_m_nlr = float(val_neu / val_lym)
-        
         score = 0
-        if m_wbc < 5000: score += 35
-        if m_lym < 20: score += 25
-        if st.session_state.saved_m_nlr >= 3.0: score += 25
-        if m_temp >= 38.0: score += 15
-        
+        if m_wbc < 5000:
+            score += 35
+        if m_lym < 20:
+            score += 25
+        if st.session_state.saved_m_nlr >= 3.0:
+            score += 25
+        if m_temp >= 38.0:
+            score += 15
         if score >= 85:
