@@ -10,13 +10,13 @@ st.set_page_config(page_title="Smart Lab CDSS - Wapipathum Hospital", layout="wi
 st.cache_data.clear()
 st.cache_resource.clear()
 
-# ส่วนหัวโปรแกรมหลัก (Header) อิงตามสเปกผลงานวิจัยหลัก
+# ส่วนหัวโปรแกรมหลัก (Header) อิงตามสเปกผลงานวิจัยหลักของคุณหมอ
 st.title("📊 ระบบสนับสนุนการตัดสินใจทางคลินิกอัจฉริยะ (Smart Lab CDSS)")
-st.write("**พัฒนาโดย: กีรติ เหลืองชัยศรี • โรงพยาบาลวาปีปทุม จังหวัดมหาสารคาม**")
+st.write("พัฒนาโดย: กีรติ เหลืองชัยศรี • โรงพยาบาลวาปีปทุม จังหวัดมหาสารคาม")
 st.write("---")
 
 # =========================================================================
-# 🔵 ขั้นตอนที่ 1: เลือกช่องทางการนำเข้าข้อมูลทางคลินิก
+# 🔵 ขั้นตอนที่ 1: เลือกช่องทางการนำเข้าข้อมูลทางคลินิก (วิทยุสลับโหมดเสถียรสูงสุด)
 # =========================================================================
 st.write("#### 🔵 ขั้นตอนที่ 1: เลือกช่องทางการนำเข้าข้อมูลทางคลินิก")
 options_list = [
@@ -26,7 +26,7 @@ options_list = [
 app_mode = st.radio(
     "เลือกช่องทางการคัดกรองโรค:",
     options=options_list,
-    index=0,  # ตั้งค่าเริ่มต้นให้อยู่ที่โหมดดึงออโต้ HOSxP เป็นหน้าแรกสากล
+    index=1,  # บังคับหน้าจอเปิดมาล็อกเป้าอยู่ที่ป้อนข้อมูลมือ (Manual) ทันทีตรงตามในรูปภาพหน้าจอ
     label_visibility="collapsed"
 )
 st.write("---")
@@ -40,9 +40,8 @@ if selected_index == 0:
     st.write("### 🔌 ดึงข้อมูลคัดกรองโรคอัตโนมัติจากฐานข้อมูลโรงพยาบาล (Live HOSxP Query)")
     st.caption("ดึงและประมวลผลพารามิเตอร์ดัชนีทางโลหิตวิทยา (CBC) และสัญญาณชีพแรกรับจริงผ่านระบบเครือข่ายภายใน (วง LAN)")
     
-    # ดึงสภาวะตั้งค่าการเชื่อมต่อฐานข้อมูลที่ IT รันฝังไว้หลังบ้านระบบ Server รพ.
     db_config = {
-        "host": "127.0.0.1",       # IT สามารถปรับเปลี่ยน IP ตรงนี้ให้ชี้ไปที่ Slave Server ของ รพ. ได้
+        "host": "127.0.0.1",
         "port": 3306,
         "user": "hosxp_user",
         "password": "hosxp_password",
@@ -50,7 +49,6 @@ if selected_index == 0:
     }
 
     col_live1, col_live2 = st.columns([1, 1.5])
-
     with col_live1:
         st.write("##### 🔍 ค้นหาผู้ป่วยนอก")
         live_hn = st.text_input("ระบุรหัส HN ของผู้ป่วยเพื่อดึงข้อมูลแล็บและสัญญาณชีพ:", value="").strip().upper()
@@ -59,13 +57,9 @@ if selected_index == 0:
 
     with col_live2:
         st.write("##### 💻 หน้าจอแสดงผลสารสนเทศด่านหน้าและการพยากรณ์โรค")
-        
-        # ประกาศตัวแปรรับค่าพารามิเตอร์เริ่มต้น (สแตนบายค่าว่างรอการ Query)
         v_hct, v_wbc, v_rbc, v_plt, v_mcv, v_mch, v_mchc, v_neu, v_eo, v_lym, v_baso, v_mono, v_temp, v_age = 0.0, 0, 0.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0
-        
         if process_btn and live_hn:
             try:
-                # เปิดท่อดึงข้อมูลดิบจากระบบคอมพิวเตอร์หลังบ้าน รพ.
                 conn = mysql.connector.connect(**db_config)
                 query_patient = f"""
                     SELECT o.hct, o.wbc, o.rbc, o.plt, o.mcv, o.mch, o.mchc, o.neu, o.eo, o.lym, o.baso, o.mono, 
@@ -77,7 +71,6 @@ if selected_index == 0:
                 """
                 df_p = pd.read_sql(query_patient, conn)
                 conn.close()
-                
                 if not df_p.empty:
                     df_p.columns = df_p.columns.astype(str).str.strip().str.upper()
                     v_hct = float(df_p.at[0, 'HCT']) if pd.notna(df_p.at[0, 'HCT']) else v_hct
@@ -100,7 +93,6 @@ if selected_index == 0:
             except Exception as e:
                 st.error(f"❌ เกิดความคลาดเคลื่อนในการเชื่อมต่อคลังข้อมูลวง LAN: {e}")
 
-        # ตารางรายงานพารามิเตอร์ CBC 14 ตัวแปรขึ้นแสดงผลถาวรค้างแดชบอร์ดตามเกณฑ์มาตรฐาน LIS
         st.write(f"**รหัสประจำตัวผู้ป่วยนอก:** `{live_hn}` | **อายุ:** {int(v_age)} ปี | **อุณหภูมิแรกรับ:** {v_temp} °C")
         live_cbc_df = pd.DataFrame({
             'Parameters': ['Hct (Hematocrit)', 'Wbc (WBC Count)', 'Rbc (RBC Count)', 'Plt (Platelet)', 'MCV', 'MCH', 'MCHC', 'Neu (Neutrophil)', 'Eo (Eosinophil)', 'Lym (Lymphocyte)', 'Baso (Basophil)', 'Mono (Monocyte)', 'body_temp (อุณหภูมิร่างกาย)', 'Age (อายุ)'],
@@ -110,42 +102,46 @@ if selected_index == 0:
         })
         st.table(live_cbc_df)
         
-        # คำนวณลоจิกพยากรณ์ความไวสูงอิงตามสมมุติฐานพยาธิสรีรวิทยาไข้หวัดใหญ่เล่มวิจัย
         v_nlr = float(v_neu / v_lym) if v_lym > 0 else 2.0
         if process_btn and live_hn and v_wbc > 0:
             if v_temp >= 38.0 and (v_wbc < 5000 or v_lym <= 26.6 or v_nlr >= 2.7):
                 prob, risk = float(np.random.uniform(85.0, 97.5)), "high"
             else:
                 prob, risk = float(np.random.uniform(5.0, 35.0)), "low"
-                
             st.write("##### 🔮 ผลการวิเคราะห์ระดับความเสี่ยงทางคลินิก (AI Evaluation)")
             st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{prob:.2f} %** | ค่าอัตราส่วน NLR จริง: **{v_nlr:.2f}**")
             if risk == "high":
                 st.error("🚨 แนะนําทางการแพทย์: 🔴 ความเสี่ยงสูง (จํานวน WBC ลดต่ํา ร่วมกับภาวะ Lymphopenia และค่า NLR สูง ตรงตามพยาธิสรีรวิทยาการติดเชื้อไวรัสไข้หวัดใหญ่ตัวจริง แนะนําส่งตรวจ Rapid Influenza Test ทันที)")
             else:
-                st.success("🟢 แนะนําทางการแพทย์: 🟢 ความเสี่ยงต่ํา (พารามิเตอร์ CBC และอัตราส่วน NLR อยู่ในเกณฑ์ปกติของประชากรทั่วไป)")
+                st.success("🟢 แนะนําทางการแพทย์: 🟢 ความเสี่ยงต่ำ (พารามิเตอร์ CBC และอัตราส่วน NLR อยู่ในเกณฑ์ปกติของประชากรทั่วไป)")
 
 # =========================================================================
-# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - 🛠️ [จุดเติมเต็มฟังก์ชันจบสมบูรณ์ 100% ขึ้นครบไม่ล้นขอบจอ]
+# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - 🛠️ [จุดกู้ความพึงพอใจสูงสุด โผล่ครบ 14 ช่องพร้อมปุ่มกด 100%]
 # =========================================================================
 elif selected_index == 1:
-    # 🛠️ นำฟอร์มล็อกขอบข่ายเดี่ยว st.form มาครอบประโยคเพื่อบังคับดีดดึงปุ่มคำนวณสีฟ้าและช่องกรอกทั้งหมดประจำการหน้าแดชบอร์ด
-    with st.form(key="clinical_manual_input_form_gate"):
-        st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
-        st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนทั้ง 14 พารามิเตอร์เพื่อส่งประมวลผลด้วย AI")
+    st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
+    st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนทั้ง 14 พารามิเตอร์เพื่อส่งประมวลผลด้วย AI")
+    
+    # 🛠️ ใช้กลไกอิสระ 2 ฝั่งจัดขอบฟอนต์แบบไม่ซ้อน Form หลอน บังคับช่องคีย์ตัวเลขให้ขึ้นครบ 14 ข้อเรียงแถวตามรูปภาพ
+    col_grid1, col_grid2 = st.columns(2)
+    
+    with col_grid1:
+        m_hct = st.number_input("1. Hct (Hematocrit) (%):", min_value=10.0, max_value=70.0, value=40.00, step=0.1, key="man_hct")
+        m_wbc = st.number_input("2. Wbc (WBC Count) (เซลล์/ลบ.มม.):", min_value=100, max_value=50000, value=4200, step=100, key="man_wbc")
+        m_rbc = st.number_input("3. Rbc (RBC Count) (ล้านเซลล์/ลบ.มม.):", min_value=1.0, max_value=10.0, value=4.50, step=0.01, key="man_rbc")
+        m_plt = st.number_input("4. Plt (Platelet) (เซลล์/ลบ.มม.):", min_value=1000, max_value=1000000, value=250000, step=1000, key="man_plt")
+        m_mcv = st.number_input("5. MCV (fL):", min_value=50.0, max_value=150.0, value=88.20, step=0.1, key="man_mcv")
+        m_mch = st.number_input("6. MCH (pg):", min_value=15.0, max_value=50.0, value=28.20, step=0.1, key="man_mch")
+        m_mchc = st.number_input("7. MCHC (g/dL):", min_value=20.0, max_value=50.0, value=31.90, step=0.1, key="man_mchc")
         
-        # จัดแบ่งครึ่งช่องกรอกออกเป็น 2 ฝั่งซ้าย-ขวา ประหยัดพื้นที่แนวตั้งลงไป 50% บังคับแสดงผลครบ 1-14 ข้อไม่มีวันจมหาย
-        col_grid1, col_grid2 = st.columns(2)
+    with col_grid2:
+        m_neu = st.number_input("8. Neu (Neutrophil) (%):", min_value=0.0, max_value=100.0, value=73.40, step=1.0, key="man_neu")
+        m_eo = st.number_input("9. Eo (Eosinophil) (%):", min_value=0.0, max_value=100.0, value=2.00, step=1.0, key="man_eo")
+        m_lym = st.number_input("10. Lym (Lymphocyte) (%):", min_value=0.0, max_value=100.0, value=26.60, step=1.0, key="man_lym")
+        m_baso = st.number_input("11. Baso (Basophil) (%):", min_value=0.0, max_value=100.0, value=1.00, step=1.0, key="man_baso")
+        m_mono = st.number_input("12. Mono (Monocyte) (%):", min_value=0.0, max_value=100.0, value=5.00, step=1.0, key="man_mono")
+        m_temp = st.number_input("13. body_temp (อุณหภูมิร่างกายแรกรับ) (°C):", min_value=30.0, max_value=45.0, value=39.00, step=0.1, key="man_temp")
+        m_age = st.number_input("14. Age (อายุผู้ป่วย) (ปี):", min_value=0, max_value=120, value=34, step=1, key="man_age")
         
-        with col_grid1:
-            m_hct = st.number_input("1. Hct (Hematocrit) (%):", min_value=10.0, max_value=70.0, value=42.30, step=0.1, key="man_hct")
-            m_wbc = st.number_input("2. Wbc (WBC Count) (เซลล์/ลบ.มม.):", min_value=100, max_value=50000, value=3990, step=100, key="man_wbc")
-            m_rbc = st.number_input("3. Rbc (RBC Count) (ล้านเซลล์/ลบ.มม.):", min_value=1.0, max_value=10.0, value=4.91, step=0.01, key="man_rbc")
-            m_plt = st.number_input("4. Plt (Platelet) (เซลล์/ลบ.มม.):", min_value=1000, max_value=1000000, value=120000, step=1000, key="man_plt")
-            m_mcv = st.number_input("5. MCV (fL):", min_value=50.0, max_value=150.0, value=86.20, step=0.1, key="man_mcv")
-            m_mch = st.number_input("6. MCH (pg):", min_value=15.0, max_value=50.0, value=28.40, step=0.1, key="man_mch")
-            m_mchc = st.number_input("7. MCHC (g/dL):", min_value=20.0, max_value=50.0, value=33.00, step=0.1, key="man_mchc")
-            
-        with col_grid2:
-            m_neu = st.number_input("8. Neu (Neutrophil) (%):", min_value=0.0, max_value=100.0, value=59.00, step=1.0, key="man_neu")
-            m_eo = st.number_input("9. Eo (Eosinophil) (%):", min_value=0.0, max_value=100.0, value=2.00, step=1.0, key="man_eo")
+    st.write("---")
+    
