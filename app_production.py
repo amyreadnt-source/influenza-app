@@ -127,7 +127,7 @@ if selected_index == 0:
                     prob = float(prob_array * 100)
                     v_nlr = float(v_neu / v_lym) if v_lym > 0 else 2.0
                     
-                    st.write("##### 🔮 ผลการวิเคราะห์ระดับความเสี่ยงทางคลินิก (AI Machine Evaluation)")
+                    st.write("##### 🔮 ผลการวิเคราะห์ระดับความเสี่ยงทางคลินิก (AI Evaluation)")
                     st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{prob:.2f} %** | ค่าอัตราส่วน NLR จริง: **{v_nlr:.2f}**")
                     if prob >= 65.0:
                         st.error("🚨 แนะนำทางการแพทย์: 🔴 ความเสี่ยงสูง (พารามิเตอร์ CBC ผันแปรตรงตามพยาธิสรีรวิทยาการติดเชื้อไวรัสไข้หวัดใหญ่เด่นชัด แนะนำส่งตรวจ Rapid Influenza Test ทันที)")
@@ -137,26 +137,33 @@ if selected_index == 0:
                     st.warning(f"⚠️ ดึงค่าโมเดลขัดข้องชั่วคราว: {e}")
 
 # =========================================================================
-# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - 🛠️ [จุดกู้คืนสำเร็จ 14 ข้อครบถ้วน 100% บีบหน้าจอระดับ Micro Grid]
+# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - 🛠️ [จุดกู้ชีพ 14 ข้อครบถ้วน 100% ด้วยระบบตาราง Grid ประหยัดพื้นที่]
 # =========================================================================
 elif selected_index == 1:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
-    st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนเพื่อส่งประมวลผลด้วย AI")
+    st.caption("💡 *วิธีใช้งาน: คุณหมอสามารถดับเบิ้ลคลิกพิมพ์แก้ไขตัวเลขเลือดคนไข้ทั้ง 14 ค่าในตารางด้านล่างนี้ได้โดยตรง จากนั้นกดปุ่มประมวลผลสีฟ้าได้ทันทีครับ*")
     
-    # 🛠️ ใช้คำสั่งซอยย่อยออกเป็น 4 คอลัมน์ย่อยขนานกัน เพื่อบีบพื้นที่แนวตั้งขึ้นโชว์ครบถ้วน 14 ข้อร้อยเปอร์เซ็นต์ในหน้าเดียว
-    g_col1, g_col2, g_col3, g_col4 = st.columns(4)
+    # สร้างตารางข้อมูลเริ่มต้นพารามิเตอร์ 14 ตัวแปรต้นแบบครบถ้วนไม่ตกหล่นแม้แต่ข้อเดียว
+    default_grid_data = pd.DataFrame({
+        "พารามิเตอร์ตรวจเลือดและสัญญาณชีพ (14 Parameters)": [
+            "1. Hct (Hematocrit) (%)", "2. Wbc (WBC Count) (เซลล์/ลบ.มม.)", "3. Rbc (RBC Count) (ล้านเซลล์)", "4. Plt (Platelet) (เซลล์/ลบ.มม.)",
+            "5. MCV (fL)", "6. MCH (pg)", "7. MCHC (g/dL)", "8. Neu (Neutrophil) (%)",
+            "9. Eo (Eosinophil) (%)", "10. Lym (Lymphocyte) (%)", "11. Baso (Basophil) (%)", "12. Mono (Monocyte) (%)",
+            "13. body_temp (อุณหภูมิแรกรับ) (°C)", "14. Age (อายุผู้ป่วย) (ปี)"
+        ],
+        "ค่าผลเลือดคนไข้จริง (ดับเบิ้ลคลิกพิมพ์แก้ไขที่นี่)": [
+            42.30, 3990.0, 4.91, 120000.0,
+            86.20, 28.40, 33.00, 59.00,
+            2.00, 31.00, 1.00, 7.00,
+            38.50, 25.0
+        ]
+    })
     
-    with g_col1:
-        m_hct = st.number_input("1. Hct (%)", min_value=10.0, max_value=70.0, value=42.30, step=0.1, key="man_hct")
-        m_wbc = st.number_input("2. Wbc (เซลล์/ลบ.มม.)", min_value=100, max_value=50000, value=3990, step=100, key="man_wbc")
-        m_rbc = st.number_input("3. Rbc (ล้านเซลล์)", min_value=1.0, max_value=10.0, value=4.91, step=0.01, key="man_rbc")
-        m_plt = st.number_input("4. Plt (เซลล์/ลบ.มม.)", min_value=1000, max_value=1000000, value=120000, step=1000, key="man_plt")
-        
-    with g_col2:
-        m_mcv = st.number_input("5. MCV (fL)", min_value=50.0, max_value=150.0, value=86.20, step=0.1, key="man_mcv")
-        m_mch = st.number_input("6. MCH (pg)", min_value=15.0, max_value=50.0, value=28.40, step=0.1, key="man_mch")
-        m_mchc = st.number_input("7. MCHC (g/dL)", min_value=20.0, max_value=50.0, value=33.00, step=0.1, key="man_mchc")
-        
-    with g_col3:
-        m_neu = st.number_input("8. Neu (%)", min_value=0.0, max_value=100.0, value=59.00, step=1.0, key="man_neu")
-        m_eo = st.number_input("9. Eo (%)", min_value=0.0, max_value=100.0, value=2.00, step=1.0, key="man_eo")
+    # พ่นตัวเก็บกล่องข้อมูลอัจฉริยะแบบแก้ไขค่าตารางสด ไม่ล้นหน้าจอคอมพิวเตอร์แน่นอน 100%
+    edited_data = st.data_editor(default_grid_data, use_container_width=True, hide_index=True)
+    
+    # สกัดค่าจากตารางออกมาแปลงเข้าสู่ระบบตัวแปรปัญญาประดิษฐ์หลังบ้าน
+    vals = edited_data["ค่าผลเลือดคนไข้จริง (ดับเบิ้ลคลิกพิมพ์แก้ไขที่นี่)"].tolist()
+    m_hct, m_wbc, m_rbc, m_plt, m_mcv, m_mch, m_mchc, m_neu, m_eo, m_lym, m_baso, m_mono, m_temp, m_age = vals
+    
+    st.write("---")
