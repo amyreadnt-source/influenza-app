@@ -56,7 +56,6 @@ if selected_index == 0:
     st.write("### 🔌 ดึงข้อมูลคัดกรองโรคอัตโนมัติจากฐานข้อมูลโรงพยาบาล (Live HOSxP Query)")
     st.caption("ดึงและประมวลผลพารามิเตอร์ดัชนีทางโลหิตวิทยา (CBC) และสัญญาณชีพแรกรับจริงผ่านวง LAN โรงพยาบาล")
     
-    # ดึงสภาวะตั้งค่าการเชื่อมต่อฐานข้อมูลที่ IT รันฝังไว้หลังบ้านระบบ Server
     db_config = {
         "host": "127.0.0.1",  # IT สามารถปรับเปลี่ยน IP ตรงนี้ให้ชี้ไปที่ Slave Server ของ รพ. ได้
         "port": 3306,
@@ -120,10 +119,10 @@ if selected_index == 0:
         })
         st.table(live_cbc_df)
         
-        # กลไกพยากรณ์โรคผูกผ่านไฟล์สมองโมเดล AI (.pkl) ของจริงร้อยเปอร์เซ็นต์
         if process_btn and live_hn and v_wbc > 0:
             if model is not None and scaler is not None:
                 try:
+                    # ปรับพิกัดตัวแปรเรียง 14 คุณลักษณะตามโมเดล Random Forest จริงเด็ดขาด
                     input_data = np.array([[v_hct, v_wbc, v_rbc, v_plt, v_mcv, v_mch, v_mchc, v_neu, v_eo, v_lym, v_baso, v_mono, v_temp, v_age]])
                     input_scaled = scaler.transform(input_data)
                     prob_array = model.predict_proba(input_scaled)
@@ -133,27 +132,28 @@ if selected_index == 0:
                     st.write("##### 🔮 ผลการวิเคราะห์ระดับความเสี่ยงทางคลินิก (AI Machine Evaluation)")
                     st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{prob:.2f} %** | ค่าอัตราส่วน NLR จริง: **{v_nlr:.2f}**")
                     if prob >= 65.0:
-                        st.error("🚨 แนะนำทางการแพทย์: 🔴 ความเสี่ยงสูง (จำนวน WBC ลดต่ำ ร่วมกับภาวะ Lymphopenia และค่า NLR สูง ตรงตามพยาธิสรีรวิทยาการติดเชื้อไวรัสไข้หวัดใหญ่ตัวจริง แนะนำส่งตรวจ Rapid Influenza Test ทันที)")
+                        st.error("🚨 แนะนำทางการแพทย์: 🔴 ความเสี่ยงสูง (พารามิเตอร์ CBC ผันแปรตรงตามพยาธิสรีรวิทยาการติดเชื้อไวรัสไข้หวัดใหญ่เด่นชัด แนะนำส่งตรวจ Rapid Influenza Test ทันที)")
                     else:
-                        st.success("🟢 แนะนำทางการแพทย์: 🟢 ความเสี่ยงต่ำ (พารามิเตอร์ CBC และอัตราส่วน NLR อยู่ในเกณฑ์ปกติของประชากรทั่วไป)")
-                except:
-                    st.warning("⚠️ การดึงค่าโมเดลขัดข้อง ปฏิบัติงานบนเกณฑ์สนับสนุนทางคลินิกพื้นฐาน")
+                        st.success("🟢 แนะนำทางการแพทย์: 🟢 ความเสี่ยงต่ำ (พารามิเตอร์ CBC อยู่ในเกณฑ์ปกติของประชากรทั่วไป)")
+                except Exception as e:
+                    st.warning(f"⚠️ ดึงค่าโมเดลขัดข้องชั่วคราว: {e}")
 
 # =========================================================================
-# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input - คืนชีพช่องกรอกและปุ่มกดถาวร)
+# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - 🛠️ [กู้ชีพครบ 14 พารามิเตอร์เต็มรูปแบบ 100%]
 # =========================================================================
 elif selected_index == 1:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
-    st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนเพื่อส่งประมวลผลด้วย AI")
+    st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนทั้ง 14 ตัวแปรเพื่อส่งประมวลผลด้วย AI ของจริง")
     
     col_manual1, col_manual2 = st.columns(2)
     with col_manual1:
-        m_hct = st.number_input("1. Hct (Hematocrit) (%):", min_value=10.0, max_value=70.0, value=40.0, step=0.1, key="man_hct")
-        m_wbc = st.number_input("2. Wbc (WBC Count) (เซลล์/ลบ.มม.):", min_value=100, max_value=50000, value=4200, step=100, key="man_wbc")
-        m_rbc = st.number_input("3. Rbc (RBC Count) (ล้านเซลล์/ลบ.มม.):", min_value=1.0, max_value=10.0, value=4.5, step=0.01, key="man_rbc")
-        m_plt = st.number_input("4. Plt (Platelet) (เซลล์/ลบ.มม.):", min_value=1000, max_value=1000000, value=250000, step=1000, key="man_plt")
-        m_mcv = st.number_input("5. MCV (fL):", min_value=50.0, max_value=150.0, value=88.2, step=0.1, key="man_mcv")
-        m_mch = st.number_input("6. MCH (pg):", min_value=15.0, max_value=50.0, value=28.2, step=0.1, key="man_mch")
-        m_mchc = st.number_input("7. MCHC (g/dL):", min_value=20.0, max_value=50.0, value=31.9, step=0.1, key="man_mchc")
+        m_hct = st.number_input("1. Hct (Hematocrit) (%):", min_value=10.0, max_value=70.0, value=42.3, step=0.1, key="man_hct")
+        m_wbc = st.number_input("2. Wbc (WBC Count) (เซลล์/ลบ.มม.):", min_value=100, max_value=50000, value=3990, step=100, key="man_wbc")
+        m_rbc = st.number_input("3. Rbc (RBC Count) (ล้านเซลล์/ลบ.มม.):", min_value=1.0, max_value=10.0, value=4.91, step=0.01, key="man_rbc")
+        m_plt = st.number_input("4. Plt (Platelet) (เซลล์/ลบ.มม.):", min_value=1000, max_value=1000000, value=120000, step=1000, key="man_plt")
+        m_mcv = st.number_input("5. MCV (fL):", min_value=50.0, max_value=150.0, value=86.2, step=0.1, key="man_mcv")
+        m_mch = st.number_input("6. MCH (pg):", min_value=15.0, max_value=50.0, value=28.4, step=0.1, key="man_mch")
+        m_mchc = st.number_input("7. MCHC (g/dL):", min_value=20.0, max_value=50.0, value=33.0, step=0.1, key="man_mchc")
     with col_manual2:
-        m_neu = st.number_input("8. Neu (Neutrophil) (%):", min_value=0.0, max_value=100.0, value=73.4, step=1.0, key="man_neu")
+        m_neu = st.number_input("8. Neu (Neutrophil) (%):", min_value=0.0, max_value=100.0, value=59.0, step=1.0, key="man_neu")
+        m_eo = st.number_input("9. Eo (Eosinophil) (%):", min_value=0.0, max_value=100.0, value=2.0, step=1.0, key="man_eo")
