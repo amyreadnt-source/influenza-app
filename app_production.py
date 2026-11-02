@@ -137,14 +137,14 @@ if selected_index == 0:
                     st.warning(f"⚠️ ดึงค่าโมเดลขัดข้องชั่วคราว: {e}")
 
 # =========================================================================
-# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - 🛠️ [จุดกู้คืนสำเร็จ เรียง 1-14 ตรงขอบแนวระนาบ ไม่มั่วถาวร 100%]
+# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - 🛠️ [จุดกู้คืนสำเร็จ 14 ข้อครบถ้วน 100% บีบหน้าจอระดับ 3 คอลัมน์สั้นกระชับ]
 # =========================================================================
 elif selected_index == 1:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
     st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนเพื่อส่งประมวลผลด้วย AI")
     
-    # 🛠️ ใช้กล่องคอลัมน์กว้างคู่แบ่งครึ่ง 7 ข้อแรกและ 7 ข้อหลัง ล็อกทิศทางเรียงตัวเลขอ่านง่าย กรอกข้อมูลสะดวกรวดเร็ว
-    col_grid1, col_grid2 = st.columns(2)
+    # 🛠️ ใช้ระบบ 3 คอลัมน์เพื่อแบ่งจัดเรียงให้จำนวนกล่องแนวตั้งสั้นลงเฉลี่ยคอลัมน์ละ 4-5 ช่อง บังคับโชว์ครบถ้วน 14 ข้อในหน้าเดียว
+    col_grid1, col_grid2, col_grid3 = st.columns(3)
     
     with col_grid1:
         m_hct = st.number_input("1. Hct (%)", min_value=10.0, max_value=70.0, value=42.30, step=0.1, key="man_hct")
@@ -152,10 +152,9 @@ elif selected_index == 1:
         m_rbc = st.number_input("3. Rbc (ล้านเซลล์)", min_value=1.0, max_value=10.0, value=4.91, step=0.01, key="man_rbc")
         m_plt = st.number_input("4. Plt (เซลล์/ลบ.มม.)", min_value=1000, max_value=1000000, value=120000, step=1000, key="man_plt")
         m_mcv = st.number_input("5. MCV (fL)", min_value=50.0, max_value=150.0, value=86.20, step=0.1, key="man_mcv")
-        m_mch = st.number_input("6. MCH (pg)", min_value=15.0, max_value=50.0, value=28.40, step=0.1, key="man_mch")
-        m_mchc = st.number_input("7. MCHC (g/dL)", min_value=20.0, max_value=50.0, value=33.00, step=0.1, key="man_mchc")
         
     with col_grid2:
+        m_mch = st.number_input("6. MCH (pg)", min_value=15.0, max_value=50.0, value=28.40, step=0.1, key="man_mch")
+        m_mchc = st.number_input("7. MCHC (g/dL)", min_value=20.0, max_value=50.0, value=33.00, step=0.1, key="man_mchc")
         m_neu = st.number_input("8. Neu (%)", min_value=0.0, max_value=100.0, value=59.00, step=1.0, key="man_neu")
         m_eo = st.number_input("9. Eo (%)", min_value=0.0, max_value=100.0, value=2.00, step=1.0, key="man_eo")
-        m_lym = st.number_input("10. Lym (%)", min_value=0.0, max_value=100.0, value=31.00, step=1.0, key="man_lym")
