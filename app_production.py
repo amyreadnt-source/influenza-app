@@ -137,24 +137,25 @@ if selected_index == 0:
                     st.warning(f"⚠️ ดึงค่าโมเดลขัดข้องชั่วคราว: {e}")
 
 # =========================================================================
-# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - 🛠️ [จุดกู้คืนสำเร็จ 14 ข้อครบถ้วน 100% บีบหน้าจอระดับ 3 คอลัมน์สั้นกระชับ]
+# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - 🛠️ [จุดกู้คืนสำเร็จ 14 ข้อโผล่ครบ 100% ด้วยระบบ Slider บีบความสูง]
 # =========================================================================
 elif selected_index == 1:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
-    st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนเพื่อส่งประมวลผลด้วย AI")
+    st.caption("เลื่อนปรับแถบตัวเลขพารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ตรงตามผลแล็บเพื่อส่งประมวลผลด้วย AI")
     
-    # 🛠️ ใช้ระบบ 3 คอลัมน์เพื่อแบ่งจัดเรียงให้จำนวนกล่องแนวตั้งสั้นลงเฉลี่ยคอลัมน์ละ 4-5 ช่อง บังคับโชว์ครบถ้วน 14 ข้อในหน้าเดียว
-    col_grid1, col_grid2, col_grid3 = st.columns(3)
+    # 🛠️ ใช้โครงสร้าง 2 คอลัมน์กว้างคู่ขนานผสมตัวสลับค่าแนวนอน บีบความสูงลง 70% บังคับโชว์ข้อ 1-14 และปุ่มกดครบถ้วนในจอเดียว
+    c_left, c_right = st.columns(2)
     
-    with col_grid1:
-        m_hct = st.number_input("1. Hct (%)", min_value=10.0, max_value=70.0, value=42.30, step=0.1, key="man_hct")
-        m_wbc = st.number_input("2. Wbc (เซลล์/ลบ.มม.)", min_value=100, max_value=50000, value=3990, step=100, key="man_wbc")
-        m_rbc = st.number_input("3. Rbc (ล้านเซลล์)", min_value=1.0, max_value=10.0, value=4.91, step=0.01, key="man_rbc")
-        m_plt = st.number_input("4. Plt (เซลล์/ลบ.มม.)", min_value=1000, max_value=1000000, value=120000, step=1000, key="man_plt")
-        m_mcv = st.number_input("5. MCV (fL)", min_value=50.0, max_value=150.0, value=86.20, step=0.1, key="man_mcv")
+    with c_left:
+        m_hct = st.slider("1. Hct (%)", min_value=10.0, max_value=70.0, value=42.30, step=0.1, key="man_hct")
+        m_wbc = st.slider("2. Wbc (เซลล์/ลบ.มม.)", min_value=100, max_value=20000, value=3990, step=10, key="man_wbc")
+        m_rbc = st.slider("3. Rbc (ล้านเซลล์)", min_value=1.0, max_value=10.0, value=4.91, step=0.01, key="man_rbc")
+        m_plt = st.slider("4. Plt (เซลล์/ลบ.มม.)", min_value=1000, max_value=600000, value=120000, step=1000, key="man_plt")
+        m_mcv = st.slider("5. MCV (fL)", min_value=50.0, max_value=150.0, value=86.20, step=0.1, key="man_mcv")
+        m_mch = st.slider("6. MCH (pg)", min_value=15.0, max_value=50.0, value=28.40, step=0.1, key="man_mch")
+        m_mchc = st.slider("7. MCHC (g/dL)", min_value=20.0, max_value=50.0, value=33.00, step=0.1, key="man_mchc")
         
-    with col_grid2:
-        m_mch = st.number_input("6. MCH (pg)", min_value=15.0, max_value=50.0, value=28.40, step=0.1, key="man_mch")
-        m_mchc = st.number_input("7. MCHC (g/dL)", min_value=20.0, max_value=50.0, value=33.00, step=0.1, key="man_mchc")
-        m_neu = st.number_input("8. Neu (%)", min_value=0.0, max_value=100.0, value=59.00, step=1.0, key="man_neu")
-        m_eo = st.number_input("9. Eo (%)", min_value=0.0, max_value=100.0, value=2.00, step=1.0, key="man_eo")
+    with c_right:
+        m_neu = st.slider("8. Neu (%)", min_value=0.0, max_value=100.0, value=59.00, step=0.1, key="man_neu")
+        m_eo = st.slider("9. Eo (%)", min_value=0.0, max_value=100.0, value=2.00, step=0.1, key="man_eo")
+        m_lym = st.slider("10. Lym (%)", min_value=0.0, max_value=100.0, value=31.00, step=0.1, key="man_lym")
