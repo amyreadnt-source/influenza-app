@@ -16,7 +16,7 @@ st.write("**พัฒนาโดย: กีรติ เหลืองชั�
 st.write("---")
 
 # =========================================================================
-# 🔵 ขั้นตอนที่ 1: เลือกช่องทางการนำเข้าข้อมูลทางคลินิก (วิทยุสลับโหมดเสถียรสูงสุด)
+# 🔵 ขั้นตอนที่ 1: เลือกช่องทางการนำเข้าข้อมูลทางคลินิก
 # =========================================================================
 st.write("#### 🔵 ขั้นตอนที่ 1: เลือกช่องทางการนำเข้าข้อมูลทางคลินิก")
 options_list = [
@@ -40,7 +40,7 @@ if selected_index == 0:
     st.write("### 🔌 ดึงข้อมูลคัดกรองโรคอัตโนมัติจากฐานข้อมูลโรงพยาบาล (Live HOSxP Query)")
     st.caption("ดึงและประมวลผลพารามิเตอร์ดัชนีทางโลหิตวิทยา (CBC) และสัญญาณชีพแรกรับจริงผ่านระบบเครือข่ายภายใน (วง LAN)")
     
-    # ดึงสภาวะตั้งค่าการเชื่อมต่อฐานข้อมูลที่ IT รันฝังไว้หลังบ้านระบบ
+    # ดึงสภาวะตั้งค่าการเชื่อมต่อฐานข้อมูลที่ IT รันฝังไว้หลังบ้านระบบ Server รพ.
     db_config = {
         "host": "127.0.0.1",       # IT สามารถปรับเปลี่ยน IP ตรงนี้ให้ชี้ไปที่ Slave Server ของ รพ. ได้
         "port": 3306,
@@ -126,36 +126,26 @@ if selected_index == 0:
                 st.success("🟢 แนะนําทางการแพทย์: 🟢 ความเสี่ยงต่ํา (พารามิเตอร์ CBC และอัตราส่วน NLR อยู่ในเกณฑ์ปกติของประชากรทั่วไป)")
 
 # =========================================================================
-# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - 🛠️ [จุดกู้ความพึงพอใจสูงสุด โผล่ครบหน้าจอเดียว 100%]
+# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - 🛠️ [จุดเติมเต็มฟังก์ชันจบสมบูรณ์ 100% ขึ้นครบไม่ล้นขอบจอ]
 # =========================================================================
 elif selected_index == 1:
-    # 🛠️ ใช้ระบบโครงสร้างย่อหน้าครอบ st.form เดี่ยว เพื่อบีบตรึงพื้นที่แนวตั้ง ป้องกันปุ่มคัดกรอง AI และอินพุตดีดหาย
+    # 🛠️ นำฟอร์มล็อกขอบข่ายเดี่ยว st.form มาครอบประโยคเพื่อบังคับดีดดึงปุ่มคำนวณสีฟ้าและช่องกรอกทั้งหมดประจำการหน้าแดชบอร์ด
     with st.form(key="clinical_manual_input_form_gate"):
         st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
         st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนทั้ง 14 พารามิเตอร์เพื่อส่งประมวลผลด้วย AI")
         
-    # ตารางรายงานพารามิเตอร์ CBC 14 ตัวแปรขึ้นแสดงผลถาวรค้างแดชบอร์ดตามเกณฑ์มาตรฐาน LIS
-    live_cbc_df = pd.DataFrame({
-        'Parameters': ['Hct (Hematocrit)', 'Wbc (WBC Count)', 'Rbc (RBC Count)', 'Plt (Platelet)', 'MCV', 'MCH', 'MCHC', 'Neu (Neutrophil)', 'Eo (Eosinophil)', 'Lym (Lymphocyte)', 'Baso (Basophil)', 'Mono (Monocyte)', 'body_temp (อุณหภูมิร่างกาย)', 'Age (อายุ)'],
-        'Value': [str(v_hct), str(v_wbc), str(v_rbc), str(v_plt), str(v_mcv), str(v_mch), str(v_mchc), str(v_neu), str(v_eo), str(v_lym), str(v_baso), str(v_mono), str(v_temp), str(v_age)],
-        'Unit': ['%', 'เซลล์/ลบ.มม.', 'ล้านเซลล์/ลบ.มม.', 'เซลล์/ลบ.มม.', 'fL', 'pg', 'g/dL', '%', '%', '%', '%', '%', '°C', 'ปี'],
-        'Reference Range': ['36.0 - 54.0', '4,000 - 10,000', '3.8 - 5.8', '150,000 - 450,000', '80.0 - 100.0', '27.0 - 32.0', '32.0 - 36.0', '40.0 - 70.0', '0.0 - 5.0', '20.0 - 40.0', '0.0 - 1.0', '2.0 - 10.0', '36.5 - 37.4', '0 - 120']
-    })
-    st.table(live_cbc_df)
-    
-    # คำนวณลอจิกพยากรณ์ความไวสูงอิงตามสมมุติฐานพยาธิสรีรวิทยาไข้หวัดใหญ่เล่มวิจัย
-    v_nlr = float(v_neu / v_lym) if v_lym > 0 else 2.0
-    
-    if process_btn and live_hn and v_wbc > 0:
-        if v_temp >= 38.0 and (v_wbc < 5000 or v_lym <= 26.6 or v_nlr >= 2.7):
-            prob, risk = float(np.random.uniform(85.0, 97.5)), "high"
-        else:
-            prob, risk = float(np.random.uniform(5.0, 35.0)), "low"
-            
-        st.write("##### 🔮 ผลการวิเคราะห์ระดับความเสี่ยงทางคลินิก (AI Evaluation)")
-        st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{prob:.2f} %** | ค่าอัตราส่วน NLR จริง: **{v_nlr:.2f}**")
+        # จัดแบ่งครึ่งช่องกรอกออกเป็น 2 ฝั่งซ้าย-ขวา ประหยัดพื้นที่แนวตั้งลงไป 50% บังคับแสดงผลครบ 1-14 ข้อไม่มีวันจมหาย
+        col_grid1, col_grid2 = st.columns(2)
         
-        if risk == "high":
-            st.error("🚨 แนะนำทางการแพทย์: 🔴 ความเสี่ยงสูง (จำนวน WBC ลดต่ำ ร่วมกับภาวะ Lymphopenia และค่า NLR สูง ตรงตามพยาธิสรีรวิทยาการติดเชื้อไวรัสไข้หวัดใหญ่ตัวจริง แนะนำส่งตรวจ Rapid Influenza Test ทันที)")
-        else:
-            st.success("🟢 แนะนำทางการแพทย์: 🟢 ความเสี่ยงต่ำ (พารามิเตอร์ CBC และอัตราส่วน NLR อยู่ในเกณฑ์ปกติของประชากรทั่วไป)")
+        with col_grid1:
+            m_hct = st.number_input("1. Hct (Hematocrit) (%):", min_value=10.0, max_value=70.0, value=42.30, step=0.1, key="man_hct")
+            m_wbc = st.number_input("2. Wbc (WBC Count) (เซลล์/ลบ.มม.):", min_value=100, max_value=50000, value=3990, step=100, key="man_wbc")
+            m_rbc = st.number_input("3. Rbc (RBC Count) (ล้านเซลล์/ลบ.มม.):", min_value=1.0, max_value=10.0, value=4.91, step=0.01, key="man_rbc")
+            m_plt = st.number_input("4. Plt (Platelet) (เซลล์/ลบ.มม.):", min_value=1000, max_value=1000000, value=120000, step=1000, key="man_plt")
+            m_mcv = st.number_input("5. MCV (fL):", min_value=50.0, max_value=150.0, value=86.20, step=0.1, key="man_mcv")
+            m_mch = st.number_input("6. MCH (pg):", min_value=15.0, max_value=50.0, value=28.40, step=0.1, key="man_mch")
+            m_mchc = st.number_input("7. MCHC (g/dL):", min_value=20.0, max_value=50.0, value=33.00, step=0.1, key="man_mchc")
+            
+        with col_grid2:
+            m_neu = st.number_input("8. Neu (Neutrophil) (%):", min_value=0.0, max_value=100.0, value=59.00, step=1.0, key="man_neu")
+            m_eo = st.number_input("9. Eo (Eosinophil) (%):", min_value=0.0, max_value=100.0, value=2.00, step=1.0, key="man_eo")
