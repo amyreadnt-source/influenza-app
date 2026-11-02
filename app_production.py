@@ -124,7 +124,7 @@ if selected_index == 0:
                     input_data = np.array([[v_hct, v_wbc, v_rbc, v_plt, v_mcv, v_mch, v_mchc, v_neu, v_eo, v_lym, v_baso, v_mono, v_temp, v_age]])
                     input_scaled = scaler.transform(input_data)
                     prob_array = model.predict_proba(input_scaled)
-                    prob = float(prob_array[0][1] * 100)
+                    prob = float(prob_array * 100)
                     v_nlr = float(v_neu / v_lym) if v_lym > 0 else 2.0
                     
                     st.write("##### 🔮 ผลการวิเคราะห์ระดับความเสี่ยงทางคลินิก (AI Machine Evaluation)")
@@ -137,13 +137,13 @@ if selected_index == 0:
                     st.warning(f"⚠️ ดึงค่าโมเดลขัดข้องชั่วคราว: {e}")
 
 # =========================================================================
-# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - 🛠️ [สยบบั๊กล้นขอบจอด้วยระบบ Tabs]
+# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - 🛠️ [จุดจัดแนวช่องไฟและย่อหน้าระดับสัจพจน์]
 # =========================================================================
 elif selected_index == 1:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
     st.caption("กรอกผลวิเคราะห์พารามิเตอร์ทางโลหิตวิทยาและสัญญาณชีพให้ครบถ้วนเพื่อส่งประมวลผลด้วย AI")
     
-    # 🛠️ แบ่งหน้าอินพุตออกเป็น 2 แท็บย่อยเพื่อบีบพื้นที่แนวตั้งให้ขึ้นโชว์ครบถ้วน ไม่จมขอบบอร์ดอีกเด็ดขาด
+    # แบ่งหน้าอินพุตออกเป็น 2 แท็บย่อยเพื่อบีบพื้นที่แนวตั้งและป้องกันปุ่มดีดหาย
     tab_rbc, tab_wbc = st.tabs(["🔴 1. ดัชนีเม็ดเลือดแดงและเกล็ดเลือด (RBC & Platelet Parameters)", "⚪ 2. ดัชนีเม็ดเลือดขาวและสัญญาณชีพ (WBC & Vital Signs)"])
     
     with tab_rbc:
