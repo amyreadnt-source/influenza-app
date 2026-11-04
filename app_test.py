@@ -37,6 +37,7 @@ if selected_index == 0:
     st.write("### 🔌 ดึงข้อมูลคัดกรองโรคอัตโนมัติจากฐานข้อมูลโรงพยาบาล (Live HOSxP Query)")
     st.caption("ดึงและประมวลผลพารามิเตอร์ดัชนีทางโลหิตวิทยา (CBC) และสัญญาณชีพแรกรับจริงผ่านระบบเครือข่ายภายใน (วง LAN)")
     
+    # 🛠️ คุณไตรภูมิ IT สามารถเปลี่ยน IP, User, Password ของระบบจริงของโรงพยาบาลที่นี่ได้เลยครับ
     db_config = {
         "host": "127.0.0.1",
         "port": 3306,
@@ -54,19 +55,32 @@ if selected_index == 0:
     with col_live2:
         st.write("##### 💻 หน้าจอแสดงผลสารสนเทศด่านหน้าและการพยากรณ์โรค")
         v_hct, v_wbc, v_rbc, v_plt, v_mcv, v_mch, v_mchc, v_neu, v_eo, v_lym, v_baso, v_mono, v_temp, v_age = 0.0, 0, 0.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0
+        
         if process_btn and live_hn:
+            conn = None
+            cursor = None
             try:
+                # 🛠️ ปรับระบบเชื่อมต่อฐานข้อมูลใหม่ ป้องกันการเปิดสายทิ้งไว้จนเครื่องล่ม
                 conn = mysql.connector.connect(**db_config)
-                query_patient = f"""
+                
+                # 🛠️ ปรับ SQL ให้ค้นหาเฉพาะของวันนี้ (CURDATE()) ป้องกันการ Scan ข้อมูลย้อนหลังในอดีตทั้งหมดซึ่งเป็นเหตุให้ระบบดับ
+                query_patient = """
                     SELECT o.hct, o.wbc, o.rbc, o.plt, o.mcv, o.mch, o.mchc, o.neu, o.eo, o.lym, o.baso, o.mono, 
                            s.temperature AS body_temp, s.age_y AS age 
                     FROM lab_order_table o 
                     LEFT JOIN opdscreen s ON o.vn = s.vn 
-                    WHERE o.hn = '{live_hn}' 
+                    WHERE o.hn = %s 
+                    AND o.order_date = CURDATE()
                     ORDER BY o.lab_order_number DESC LIMIT 1
                 """
-                df_p = pd.read_sql(query_patient, conn)
-                conn.close()
+                
+                # เปลี่ยนมาใช้การ fetch ดิบผ่าน cursor แทน pd.read_sql ตรงๆ เพื่อควบคุมสถานะการเปิด-ปิดดาต้าเบสให้ปลอดภัยสูงสุด
+                cursor = conn.cursor(dictionary=True)
+                cursor.execute(query_patient, (live_hn,))
+                rows = cursor.fetchall()
+                df_p = pd.DataFrame(rows)
+                cursor.close()
+
                 if not df_p.empty:
                     df_p.columns = df_p.columns.astype(str).str.strip().str.upper()
                     v_hct = float(df_p.at[0, 'HCT']) if pd.notna(df_p.at[0, 'HCT']) else v_hct
@@ -85,9 +99,13 @@ if selected_index == 0:
                     v_age = int(df_p.at[0, 'AGE']) if pd.notna(df_p.at[0, 'AGE']) else v_age
                     st.success(f"✅ ดึงข้อมูลผลตรวจและสัญญาณชีพของ HN {live_hn} เรียบร้อยแล้ว")
                 else:
-                    st.warning(f"⚠️ ไม่พบข้อมูลประวัติการตรวจแล็บของผู้ป่วยรหัส HN {live_hn} ในระบบ")
+                    st.warning(f"⚠️ ไม่พบข้อมูลประวัติการตรวจแล็บของวันนี้ สำหรับรหัส HN {live_hn}")
             except Exception as e:
                 st.error(f"❌ เกิดความคลาดเคลื่อนในการเชื่อมต่อคลังข้อมูลวง LAN: {e}")
+            finally:
+                # 🛠️ บังคับสั่งตัดการเชื่อมต่อออกจาก MySQL Server หลักทุกกรณีทันที ป้องกันปัญหาระบบดับถาวร
+                if conn and conn.is_connected():
+                    conn.close()
 
         st.write(f"**รหัสประจำตัวผู้ป่วยนอก:** `{live_hn}` | **อายุ:** {int(v_age)} ปี | **อุณหภูมิแรกรับ:** {v_temp} °C")
         live_cbc_df = pd.DataFrame({
@@ -114,7 +132,7 @@ if selected_index == 0:
                 st.success("🟢 แนะนําทางการแพทย์: 🟢 ความเสี่ยงต่ำ (พารามิเตอร์ CBC และอัตราส่วน NLR อยู่ในเกณฑ์ปกติของประชากรทั่วไป)")
 
 # =========================================================================
-# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - 🛠️ [ซ่อมแซมจุดแปรผลเรียลไทม์สำเร็จ 100%]
+# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)
 # =========================================================================
 elif selected_index == 1:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
@@ -125,65 +143,4 @@ elif selected_index == 1:
     with col_grid1:
         m_hct = st.number_input("1. Hct (Hematocrit) (%):", min_value=10.0, max_value=70.0, value=40.00, step=0.1, key="man_hct")
         m_wbc = st.number_input("2. Wbc (WBC Count) (เซลล์/ลบ.มม.):", min_value=100, max_value=50000, value=4200, step=100, key="man_wbc")
-        m_rbc = st.number_input("3. Rbc (RBC Count) (ล้านเซลล์/ลบ.มม.):", min_value=1.0, max_value=10.0, value=4.50, step=0.01, key="man_rbc")
-        m_plt = st.number_input("4. Plt (Platelet) (เซลล์/ลบ.มม.):", min_value=1000, max_value=1000000, value=250000, step=1000, key="man_plt")
-        m_mcv = st.number_input("5. MCV (fL):", min_value=50.0, max_value=150.0, value=88.20, step=0.1, key="man_mcv")
-        m_mch = st.number_input("6. MCH (pg):", min_value=15.0, max_value=50.0, value=28.20, step=0.1, key="man_mch")
-        m_mchc = st.number_input("7. MCHC (g/dL):", min_value=20.0, max_value=50.0, value=31.90, step=0.1, key="man_mchc")
-        
-    with col_grid2:
-        m_neu = st.number_input("8. Neu (Neutrophil) (%):", min_value=0.0, max_value=100.0, value=73.40, step=1.0, key="man_neu")
-        m_eo = st.number_input("9. Eo (Eosinophil) (%):", min_value=0.0, max_value=100.0, value=2.00, step=1.0, key="man_eo")
-        m_lym = st.number_input("10. Lym (Lymphocyte) (%):", min_value=0.0, max_value=100.0, value=26.60, step=1.0, key="man_lym")
-        m_baso = st.number_input("11. Baso (Basophil) (%):", min_value=0.0, max_value=100.0, value=1.00, step=1.0, key="man_baso")
-        m_mono = st.number_input("12. Mono (Monocyte) (%):", min_value=0.0, max_value=100.0, value=5.00, step=1.0, key="man_mono")
-        m_temp = st.number_input("13. body_temp (อุณหภูมิร่างกายแรกรับ) (°C):", min_value=30.0, max_value=45.0, value=39.00, step=0.1, key="man_temp")
-        m_age = st.number_input("14. Age (อายุผู้ป่วย) (ปี):", min_value=0, max_value=120, value=34, step=1, key="man_age")
-        
-    st.write("---")
-    
-    # 🛠️ [จุดคืนชีพปุ่มกดสำเร็จ] สร้างปุ่มกดขนาดใหญ่เต็มหน้าจอสีฟ้า ล้างอาการรีรันคลาวด์วูบหาย
-    click_btn = st.button("🔮 กดปุ่มตรงนี้เพื่อประมวลผลความเสี่ยงด้วย AI", use_container_width=True, key="manual_mode_trigger_btn")
-    
-    st.write("### 💻 ผลการประเมินความเสี่ยงและการวินิจฉัยโรคตามพยาธิสรีรวิทยา")
-    
-    # ฝังกลไกหน่วยความจำถาวรครอบตัวแปรประมวลผลหลังบ้าน ป้องกันหน้าจอนิ่งเฉย
-    if "saved_m_prob" not in st.session_state: st.session_state.saved_m_prob = None
-    if "saved_m_nlr" not in st.session_state: st.session_state.saved_m_nlr = None
-    if "saved_m_risk" not in st.session_state: st.session_state.saved_m_risk = None
-
-    if click_btn:
-        val_neu = float(m_neu) if m_neu > 0 else 60.0
-        val_lym = float(m_lym) if m_lym > 0 else 30.0
-        st.session_state.saved_m_nlr = float(val_neu / val_lym)
-        
-        # จัดคะแนนพยาธิสรีรวิทยาจำเพาะตามเกณฑ์ระบาดวิทยาที่คุณหมอสรุป
-        score = 0
-        if m_wbc <= 5000:       score += 35   # WBC ต่ำกว่าหรือเท่ากับ 5000
-        if m_lym <= 25.0:       score += 30   # ปรับระดับความไวภาวะ Lymphopenia ให้รับกับเคสจริง
-        if st.session_state.saved_m_nlr >= 2.7: score += 25   # ดักจับค่า NLR สูง
-        if m_temp >= 38.0:      score += 15   # เคสไข้สูงเฉียบพลัน
-        
-        # ดันขึ้นสเกลระดับความเสี่ยงสูงทันทีเมื่อดัชนีเข้าข่ายพยาธิสรีรวิทยาไข้หวัดใหญ่ตัวจริง
-        if score >= 60 or (m_temp >= 38.0 and (m_wbc < 5000 or m_lym <= 26.6)):
-            st.session_state.saved_m_prob = float(np.random.uniform(82.4, 98.7))
-            st.session_state.saved_m_risk = "high"
-        elif score >= 35:
-            st.session_state.saved_m_prob = float(np.random.uniform(41.0, 69.5))
-            st.session_state.saved_m_risk = "moderate"
-        else:
-            st.session_state.saved_m_prob = float(np.random.uniform(1.2, 39.5))
-            st.session_state.saved_m_risk = "low"
-
-    # บังคับพ่นรายงานรหัสสีความเสี่ยงให้แสดงผลค้างไว้บนหน้าแดชบอร์ดอย่างสวยงามถาวร 100% หลังกดปุ่ม
-    if st.session_state.saved_m_prob is not None:
-        st.info(f"🧠 **[ผลวิเคราะห์วินิจฉัยจากระบบ AI]** โอกาสติดเชื้อไวรัสไข้หวัดใหญ่: **{st.session_state.saved_m_prob:.2f} %** | ค่าอัตราส่วน NLR จริง: **{st.session_state.saved_m_nlr:.2f}**")
-        
-        if st.session_state.saved_m_risk == "high":
-            st.error("🚨 แนะนำทางการแพทย์: 🔴 ความเสี่ยงสูง (แนะนำตรวจ Rapid Influenza Test)")
-        elif st.session_state.saved_m_risk == "moderate":
-            st.warning("⚠️ ข้อแนะนำสนับสนุนการตัดสินใจ: 🟡 ความเสี่ยงปานกลาง (ควรติดตามเฝ้าระวังอาการอย่างใกล้ชิด หรือพิจารณาเจาะเลือดซ้ำหากอาการไม่ดีขึ้น)")
-        else:
-            st.success("🟢 แนะนำทางการแพทย์: 🟢 ความเสี่ยงต่ำ (ไม่พบความผิดปกติเด่นชัดของดัชนีผลเลือด)")
-    else:
-        st.info("💡 ระบบพร้อมปฏิบัติงาน: กรุณากรอกผลเลือดด้านบนให้เรียบร้อย แล้วกดปุ่มสีฟ้าเพื่อประมวลผลความเสี่ยง")
+        m_rbc = st.number_input("3. Rbc (RBC Count) (ล้านเซลล์/ลบ.มม.):", min_value=1.0, max_value=10.0, value=4.50, step=0.01)
