@@ -15,7 +15,7 @@ st.title("📊 ระบบสนับสนุนการตัดสิน�
 st.write("พัฒนาโดย: กีรติ เหลืองชัยศรี • โรงพยาบาลวาปีปทุม จังหวัดมหาสารคาม")
 
 # =========================================================================
-# 🔵 ขั้นตอนที่ 1: เลือกช่องทางการนำเข้าข้อมูลทางคลินิก (วิทยุสลับโหมดเสถียรสูงสุด)
+# 🔵 ขั้นตอนที่ 1: เลือกช่องทางการนำเข้าข้อมูลทางคลินิก
 # =========================================================================
 options_list = [
     "🔌 ดึงข้อมูลอัตโนมัติจากฐานข้อมูลโรงพยาบาล (Live HOSxP Query)", 
@@ -24,7 +24,7 @@ options_list = [
 app_mode = st.radio(
     "เลือกช่องทางการคัดกรองโรค:",
     options=options_list,
-    index=1,  # ล็อกหน้าจอเริ่มต้นให้เปิดมาที่ป้อนมือ (Manual) ทันทีตรงตามหน้าจอคอมพิวเตอร์ของคุณหมอ
+    index=1,  # ล็อกหน้าจอเริ่มต้นให้เปิดมาที่ป้อนมือ (Manual) ทันทีตรงตามความต้องการของคุณหมอ
     label_visibility="collapsed"
 )
 
@@ -37,7 +37,7 @@ if selected_index == 0:
     st.write("### 🔌 ดึงข้อมูลคัดกรองโรคอัตโนมัติจากฐานข้อมูลโรงพยาบาล (Live HOSxP Query)")
     st.caption("ดึงและประมวลผลพารามิเตอร์ดัชนีทางโลหิตวิทยา (CBC) และสัญญาณชีพแรกรับจริงผ่านระบบเครือข่ายภายใน (วง LAN)")
     
-    # 🛠️ คุณไตรภูมิ IT สามารถเปลี่ยน IP, User, Password ของระบบจริงของโรงพยาบาลที่นี่ได้เลยครับ
+    # 🛠️ คุณไตรภูมิ IT ปรับ IP และรหัสผ่านฐานข้อมูลโรงพยาบาลตรงนี้ได้เลยครับ
     db_config = {
         "host": "127.0.0.1",
         "port": 3306,
@@ -60,10 +60,9 @@ if selected_index == 0:
             conn = None
             cursor = None
             try:
-                # 🛠️ ปรับระบบเชื่อมต่อฐานข้อมูลใหม่ ป้องกันการเปิดสายทิ้งไว้จนเครื่องล่ม
                 conn = mysql.connector.connect(**db_config)
                 
-                # 🛠️ ปรับ SQL ให้ค้นหาเฉพาะของวันนี้ (CURDATE()) ป้องกันการ Scan ข้อมูลย้อนหลังในอดีตทั้งหมดซึ่งเป็นเหตุให้ระบบดับ
+                # Safe Query: บังคับค้นหาเฉพาะเคสที่มารับบริการ "วันนี้" เท่านั้นเพื่อป้องกันเซิร์ฟเวอร์ดับ
                 query_patient = """
                     SELECT o.hct, o.wbc, o.rbc, o.plt, o.mcv, o.mch, o.mchc, o.neu, o.eo, o.lym, o.baso, o.mono, 
                            s.temperature AS body_temp, s.age_y AS age 
@@ -74,7 +73,6 @@ if selected_index == 0:
                     ORDER BY o.lab_order_number DESC LIMIT 1
                 """
                 
-                # ใช้การ fetch ดิบผ่าน cursor แทน pd.read_sql เพื่อควบคุมสถานะการปิดฐานข้อมูลให้ปลอดภัยสูงสุด
                 cursor = conn.cursor(dictionary=True)
                 cursor.execute(query_patient, (live_hn,))
                 rows = cursor.fetchall()
@@ -103,7 +101,6 @@ if selected_index == 0:
             except Exception as e:
                 st.error(f"❌ เกิดความคลาดเคลื่อนในการเชื่อมต่อคลังข้อมูลวง LAN: {e}")
             finally:
-                # 🛠️ บังคับสั่งตัดการเชื่อมต่อออกจาก MySQL Server หลักทุกกรณีทันที ป้องกันปัญหาระบบดับถาวร
                 if conn and conn.is_connected():
                     conn.close()
 
@@ -127,12 +124,12 @@ if selected_index == 0:
             if risk == "high":
                 st.error("🚨 แนะนําทางการแพทย์: 🔴 ความเสี่ยงสูง (จํานวน WBC ลดต่ํา ร่วมกับภาวะ Lymphopenia และค่า NLR สูง ตรงตามพยาธิสรีรวิทยาการติดเชื้อไวรัสไข้หวัดใหญ่ตัวจริง แนะนําส่งตรวจ Rapid Influenza Test ทันที)")
             elif risk == "medium":
-                st.warning("⚠️ แนะนำทางการแพทย์: 🟡 ความเสี่ยงปานกลาง (พบสัญญาณพยาธิสภาพหรือไข้ทางคลินิกบางส่วน แนะนำให้เฝ้าระวังและติดตามอาการอย่างใกล้ชิด)")
+                st.warning("⚠️ แนะนำทางการแพทย์: 🟡 ความเสืองปานกลาง (พบสัญญาณพยาธิสภาพหรือไข้ทางคลินิกบางส่วน แนะนำให้เฝ้าระวังและติดตามอาการอย่างใกล้ชิด)")
             else:
                 st.success("🟢 แนะนําทางการแพทย์: 🟢 ความเสี่ยงต่ำ (พารามิเตอร์ CBC และอัตราส่วน NLR อยู่ในเกณฑ์ปกติของประชากรทั่วไป)")
 
 # =========================================================================
-# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)
+# 📝 โหมดดัชนี 1: ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input) - เขียนเต็มไฟล์
 # =========================================================================
 elif selected_index == 1:
     st.write("### 📝 ป้อนผลเลือดและข้อมูลทางคลินิกเอง (Manual CBC Input)")
@@ -141,6 +138,18 @@ elif selected_index == 1:
     col_grid1, col_grid2 = st.columns(2)
     
     with col_grid1:
+        st.write("##### 🩸 ผลการตรวจดัชนีทางโลหิตวิทยา (CBC)")
         m_hct = st.number_input("1. Hct (Hematocrit) (%):", min_value=10.0, max_value=70.0, value=40.00, step=0.1, key="man_hct")
         m_wbc = st.number_input("2. Wbc (WBC Count) (เซลล์/ลบ.มม.):", min_value=100, max_value=50000, value=4200, step=100, key="man_wbc")
-        m_rbc = st.number_input("3. Rbc (RBC Count) (ล้านเซลล์/ลบ.มม.):", min_value=1.0, max_value=10.0, value=4.50, step=0.01)
+        m_rbc = st.number_input("3. Rbc (RBC Count) (ล้านเซลล์/ลบ.มม.):", min_value=1.0, max_value=10.0, value=4.50, step=0.01, key="man_rbc")
+        m_plt = st.number_input("4. Plt (Platelet Count) (เซลล์/ลบ.มม.):", min_value=10000, max_value=1000000, value=250000, step=1000, key="man_plt")
+        m_mcv = st.number_input("5. MCV (fL):", min_value=50.0, max_value=120.0, value=85.0, step=0.1, key="man_mcv")
+        m_mch = st.number_input("6. MCH (pg):", min_value=15.0, max_value=40.0, value=28.0, step=0.1, key="man_mch")
+        m_mchc = st.number_input("7. MCHC (g/dL):", min_value=20.0, max_value=50.0, value=33.0, step=0.1, key="man_mchc")
+
+    with col_grid2:
+        st.write("##### 🔬 อัตราส่วนเม็ดเลือดขาว (Differential Count) & ข้อมูลทั่วไป")
+        m_neu = st.number_input("8. Neu (Neutrophil) (%):", min_value=0.0, max_value=100.0, value=60.0, step=0.1, key="man_neu")
+        m_eo = st.number_input("9. Eo (Eosinophil) (%):", min_value=0.0, max_value=100.0, value=2.0, step=0.1, key="man_eo")
+        m_lym = st.number_input("10. Lym (Lymphocyte) (%):", min_value=0.0, max_value=100.0, value=25.0, step=0.1, key="man_lym")
+        m_baso = st.number_input("11. Baso (Basophil) (%):", min_value=0.0, max_value=100.0, value=0.5, step=0.1, key="man_baso")
