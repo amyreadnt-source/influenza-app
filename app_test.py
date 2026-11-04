@@ -153,7 +153,7 @@ elif selected_index == 1:
         m_eo = st.number_input("9. Eo (Eosinophil) (%):", min_value=0.0, max_value=100.0, value=2.0, step=0.1, key="man_eo")
         m_lym = st.number_input("10. Lym (Lymphocyte) (%):", min_value=0.0, max_value=100.0, value=25.0, step=0.1, key="man_lym")
         m_baso = st.number_input("11. Baso (Basophil) (%):", min_value=0.0, max_value=100.0, value=0.5, step=0.1, key="man_baso")
-          m_mono = st.number_input("12. Mono (Monocyte) (%):", min_value=0.0, max_value=100.0, value=5.0, step=1.0, key="man_mono")
+        m_mono = st.number_input("12. Mono (Monocyte) (%):", min_value=0.0, max_value=100.0, value=5.0, step=1.0, key="man_mono")
         m_temp = st.number_input("13. body_temp (อุณหภูมิร่างกายแรกรับ) (°C):", min_value=30.0, max_value=45.0, value=39.0, step=0.1, key="man_temp")
         m_age = st.number_input("14. Age (อายุผู้ป่วย) (ปี):", min_value=0, max_value=120, value=34, step=1, key="man_age")
         
